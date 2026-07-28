@@ -4,5 +4,6 @@
  * n'est requis ici, seules les variables d'environnement sont neutralisées.
  */
 process.env.TZ = 'Africa/Algiers';
-process.env.DATABASE_URL ??= 'postgresql://ceil:ceil@localhost:5432/ceil_test?schema=public';
+// Base dédiée aux tests : jamais la base de développement.
+process.env.DATABASE_URL ??= 'postgresql://ceil:ceil@127.0.0.1:5432/ceil_test?schema=public';
 process.env.AUTH_SECRET ??= 'secret-de-test-uniquement-non-utilise-en-prod';

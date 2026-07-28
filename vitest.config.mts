@@ -11,6 +11,10 @@ export default defineConfig({
     include: ['tests/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules/**', '.next/**', 'e2e/**'],
     setupFiles: ['./tests/setup.ts'],
+    // Les tests d'intégration partagent une base unique et la remettent à zéro
+    // entre chaque cas : exécuter les fichiers en parallèle les ferait se
+    // tronquer mutuellement. Les suites sont courtes, la sérialisation coûte peu.
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',

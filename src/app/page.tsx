@@ -12,7 +12,7 @@ export default async function HomePage() {
   const roadmap = [
     { step: 1, label: 'Scaffold (Next.js, Prisma, Auth, i18n, tests)', done: true },
     { step: 2, label: 'Schéma Prisma normalisé + dérivés + seed', done: true },
-    { step: 3, label: 'Couche services testée (règles de gestion)', done: false },
+    { step: 3, label: 'Couche services testée (règles de gestion)', done: true },
     { step: 4, label: 'API REST + RBAC + gestion d’erreurs', done: false },
     { step: 5, label: 'Authentification et rôles', done: false },
     { step: 6, label: 'Espace de travail Session (grilles éditables)', done: false },
@@ -39,7 +39,7 @@ export default async function HomePage() {
         <CardHeader>
           <CardTitle>Avancement de l’implémentation</CardTitle>
           <CardDescription>
-            Étapes 1 et 2 terminées : structure du projet et modèle de données normalisé.
+            Étapes 1 à 3 terminées : structure, modèle de données normalisé et couche métier testée.
           </CardDescription>
         </CardHeader>
         <CardContent>

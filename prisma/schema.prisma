@@ -368,7 +368,9 @@ model Enrollment {
   id                 String         @id @default(cuid())
   kind               EnrollmentKind @default(NEW)
   /// Matricule d'inscription, construit depuis `matriculePrefix` de la session.
-  registrationNumber String?        @unique
+  /// Unique DANS SA SESSION (voir `@@unique` plus bas), pas globalement : deux
+  /// sessions peuvent légitimement partager le même préfixe de matricule.
+  registrationNumber String?
   enrolledAt         DateTime       @default(now())
   responsible        String?
   createdAt          DateTime       @default(now())
@@ -395,6 +397,8 @@ model Enrollment {
 
   /// Empêche toute inscription en double à une même session.
   @@unique([participantId, trainingSessionId])
+  /// Le matricule d'inscription est unique dans le périmètre de sa session.
+  @@unique([trainingSessionId, registrationNumber])
   @@index([trainingSessionId])
   @@index([participantId])
   @@index([sessionGroupId])
