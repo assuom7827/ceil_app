@@ -1,7 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.PORT ?? 3000);
-const baseURL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+/**
+ * `localhost` et non `127.0.0.1` : les cookies sont attachés à l'hôte, et
+ * NextAuth redirige vers `AUTH_URL`. Viser un hôte différent ferait poser le
+ * cookie de session sur l'un et le relire sur l'autre — connexion sans effet.
+ */
+const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -15,7 +20,19 @@ export default defineConfig({
     trace: 'on-first-retry',
     locale: 'fr-FR',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Permet d'utiliser un Chromium déjà présent sur la machine (CI, image
+        // Docker) au lieu de laisser Playwright en télécharger un.
+        ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
+          ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } }
+          : {}),
+      },
+    },
+  ],
   webServer: {
     command: process.env.CI ? 'npm run build && npm run start' : 'npm run dev',
     url: `${baseURL}/api/health`,

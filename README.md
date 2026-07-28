@@ -8,10 +8,10 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 4 terminées.** Structure et outillage en place ;
-> modèle de données normalisé, fonctions dérivées, seed, couche services métier
-> et API REST complète (158 tests verts). L'authentification et l'espace de
-> travail Session arrivent aux étapes 5 et 6.
+> **État actuel : étapes 1 à 5 terminées.** Structure et outillage en place ;
+> modèle de données normalisé, fonctions dérivées, seed, couche services métier,
+> API REST complète et authentification (169 tests unitaires et d'intégration,
+> 8 tests e2e). L'espace de travail Session arrive à l'étape 6.
 
 ---
 
@@ -100,17 +100,17 @@ ceil_app/
 │   ├── schema.prisma          # schéma (étape 2 : modèle normalisé complet)
 │   └── seed.ts                # seed reproductible
 ├── src/
-│   ├── app/                   # App Router
+│   ├── app/
 │   │   ├── layout.tsx         # lang/dir pilotés par la locale
-│   │   ├── page.tsx           # accueil provisoire
 │   │   ├── globals.css        # thème + styles d'impression A4
-│   │   └── api/
-│   │       ├── health/        # sonde de disponibilité
-│   │       └── auth/[...nextauth]/
+│   │   ├── (auth)/login/      # connexion (public)
+│   │   ├── (app)/             # pages authentifiées : garde + shell
+│   │   └── api/               # 51 route handlers
+│   ├── middleware.ts          # expose le chemin demandé (aucune auth)
 │   ├── auth.ts                # configuration NextAuth (credentials)
-│   ├── components/ui/         # primitives shadcn/ui
+│   ├── components/            # primitives shadcn/ui + shell applicatif
 │   ├── i18n/                  # config + chargement des messages
-│   ├── lib/                   # prisma, env validé, utilitaires
+│   ├── lib/                   # api (wrapper, CRUD), auth, prisma, validation
 │   ├── messages/              # fr.json, ar.json
 │   └── services/              # couche métier (voir services/README.md)
 ├── tests/                     # Vitest
@@ -188,6 +188,31 @@ matricules sous concurrence.
   sur les documents officiels.
 - **Barème CECRL du seed** : 11 niveaux contigus sur 0..100, le total du
   positionnement étant la somme de deux notes écrites supposées sur 50.
+
+## Authentification et rôles
+
+Connexion par identifiants (Auth.js v5, session JWT portant le rôle). Le message
+d'échec est **identique** pour un e-mail inconnu, un mot de passe faux et un
+compte désactivé : les distinguer révélerait quels comptes existent.
+
+**La garde d'accès vit dans le layout `(app)`**, en Server Component, et non
+dans un middleware : le provider credentials dépend de bcrypt et du client
+Prisma, incompatibles avec le runtime edge d'un middleware. Le middleware
+existe néanmoins, réduit à une seule tâche — exposer le chemin demandé dans un
+en-tête, sans quoi la garde ne saurait pas vers quelle page revenir après
+connexion (un layout n'a pas accès à l'URL courante).
+
+Le masquage des entrées de menu selon le rôle est du **confort d'affichage, pas
+une mesure de sécurité** : chaque page et chaque route API revérifient le droit
+côté serveur. Masquer un lien n'a jamais empêché quiconque de saisir une URL.
+
+### Administration des comptes
+
+`/users` et `/api/users`, réservés à `ADMIN` — y compris en lecture : un
+`MANAGER` ne peut pas énumérer les comptes. Le hachage du mot de passe ne sort
+jamais de l'API. Trois garde-fous empêchent le dernier administrateur de
+s'enfermer dehors : il ne peut ni retirer son propre rôle, ni se désactiver, ni
+supprimer son compte.
 
 ## API REST
 
@@ -302,6 +327,23 @@ Sans base joignable, les suites d'intégration sont **ignorées** plutôt que
 rouges ; les tests purs, eux, tournent partout. Les fichiers s'exécutent en
 série (`fileParallelism: false`) car ils partagent cette base et la remettent à
 zéro entre chaque cas.
+
+### Tests end-to-end
+
+```bash
+npm run test:e2e
+```
+
+Playwright démarre le serveur de développement lui-même. Sur une machine
+disposant déjà d'un Chromium (CI, image Docker), évitez le téléchargement avec :
+
+```bash
+PLAYWRIGHT_CHROMIUM_PATH=/chemin/vers/chromium npm run test:e2e
+```
+
+L'URL de base utilise `localhost`, et non `127.0.0.1` : les cookies sont
+attachés à l'hôte et NextAuth redirige vers `AUTH_URL`. Viser un hôte différent
+ferait poser le cookie de session sur l'un et le relire sur l'autre.
 
 ## Internationalisation
 

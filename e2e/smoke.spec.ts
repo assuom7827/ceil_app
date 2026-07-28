@@ -7,8 +7,10 @@ test.describe('scaffold', () => {
     await expect(response.json()).resolves.toMatchObject({ status: 'ok' });
   });
 
-  test("la page d'accueil s'affiche en français", async ({ page }) => {
+  test("l'application s'affiche en français par défaut", async ({ page }) => {
+    // Non connecté, `/` redirige vers la connexion : c'est l'écran attendu.
     await page.goto('/');
+    await expect(page).toHaveURL(/\/login/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
