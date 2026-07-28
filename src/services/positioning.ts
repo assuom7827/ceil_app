@@ -175,6 +175,84 @@ export async function getPositioningRows(db: Db, positioningTestId: string) {
   };
 }
 
+/**
+ * Grille de positionnement vue depuis la SESSION : toutes les inscriptions
+ * apparaissent, y compris celles sans note, sans quoi la saisie ne pourrait pas
+ * commencer. Les notes sont rattachées au test choisi.
+ */
+export async function getSessionPositioning(
+  db: Db,
+  trainingSessionId: string,
+  positioningTestId: string,
+) {
+  const session = await db.trainingSession.findUnique({
+    where: { id: trainingSessionId },
+    select: { id: true, state: true, trainingId: true },
+  });
+  if (!session) {
+    throw notFoundError('Session de formation introuvable.', { trainingSessionId });
+  }
+
+  const test = await db.positioningTest.findUnique({
+    where: { id: positioningTestId },
+    select: { id: true, title: true, state: true, trainingId: true },
+  });
+  if (!test) {
+    throw notFoundError('Test de positionnement introuvable.', { positioningTestId });
+  }
+
+  const levels = await levelsForTraining(db, test.trainingId);
+
+  const enrollments = await db.enrollment.findMany({
+    where: { trainingSessionId },
+    orderBy: [{ participant: { familyName: 'asc' } }, { participant: { firstName: 'asc' } }],
+    select: {
+      id: true,
+      registrationNumber: true,
+      participant: {
+        select: { id: true, familyName: true, firstName: true, registrationNumber: true },
+      },
+      assignedLevel: { select: { id: true, name: true } },
+      positioningScore: {
+        select: {
+          id: true,
+          positioningTestId: true,
+          writtenExpression: true,
+          writtenComprehension: true,
+        },
+      },
+    },
+  });
+
+  return {
+    test: { id: test.id, title: test.title, state: test.state },
+    // La grille est figée si le test OU la session est verrouillé.
+    readOnly: test.state === 'LOCKED' || session.state === 'LOCKED',
+    levels: levels.map((level) => ({ id: level.id, name: level.name })),
+    rows: enrollments.map((enrollment) => {
+      // Une note d'un autre test ne doit pas s'afficher dans cette grille.
+      const score =
+        enrollment.positioningScore?.positioningTestId === test.id
+          ? enrollment.positioningScore
+          : null;
+
+      const total = derivePositioningTotal(score ?? {});
+      const resolvedLevel = resolveLevelForPoints(levels, total);
+
+      return {
+        enrollmentId: enrollment.id,
+        enrollmentNumber: enrollment.registrationNumber,
+        participant: enrollment.participant,
+        writtenExpression: score?.writtenExpression ?? null,
+        writtenComprehension: score?.writtenComprehension ?? null,
+        total,
+        resolvedLevel: resolvedLevel ? { id: resolvedLevel.id, name: resolvedLevel.name } : null,
+        assignedLevel: enrollment.assignedLevel,
+      };
+    }),
+  };
+}
+
 /** Crée ou met à jour la note de positionnement d'une inscription. */
 export async function upsertPositioningScore(
   db: Db,

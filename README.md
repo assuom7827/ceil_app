@@ -8,10 +8,11 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 5 terminées.** Structure et outillage en place ;
-> modèle de données normalisé, fonctions dérivées, seed, couche services métier,
-> API REST complète et authentification (169 tests unitaires et d'intégration,
-> 8 tests e2e). L'espace de travail Session arrive à l'étape 6.
+> **État actuel : étapes 1 à 6 terminées.** L'espace de travail Session —
+> l'écran principal — est opérationnel : inscription en une étape, grilles
+> éditables avec collage Excel, imports, organisation des groupes par niveau.
+> 169 tests unitaires et d'intégration, 14 tests e2e. Restent le CRUD des
+> référentiels (7), les documents imprimables (8) et la documentation (10).
 
 ---
 
@@ -278,6 +279,43 @@ Une forme unique, produite par un wrapper unique : `{ error, message, details? }
 
 Les erreurs Prisma sont traduites plutôt que remontées brutes : `P2002` devient
 un 409 lisible, `P2025` un 404, `P2003` un 409 explicite sur la référence.
+
+## Espace de travail Session
+
+`/sessions/[id]/workspace` est l'écran d'utilisation quotidienne. Tout s'y fait
+en onglets, sans quitter la page.
+
+| Onglet                   | Contenu                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inscrits**             | Grille éditable (type, niveau attribué, groupes), inscription en une étape, import Excel/CSV, affectation de groupe en masse, retrait |
+| **Positionnement**       | Saisie E.E / C.E, colonnes `total` et `niveau résolu` calculées en direct, « Déterminer les niveaux », import                         |
+| **Notes / Délibération** | Saisie des 4 compétences, `total` et `statut` en direct selon le seuil de la session, « Recalculer les résultats », import            |
+| **Groupes**              | Ouverture des groupes par niveau dimensionnés sur l'effectif, répartition, salles d'examen                                            |
+| **Documents**            | Arrive à l'étape 8                                                                                                                    |
+
+L'en-tête reste visible en permanence : titre dérivé, seuil d'admission
+modifiable, état `OPEN`/`LOCKED` avec bouton de verrouillage, et compteurs
+(inscrits, groupes, admis, ajournés, non délibérés).
+
+### Saisie type tableur
+
+- **Collage depuis Excel** : le presse-papiers TSV remplit la sélection vers la
+  droite et vers le bas, en sautant les colonnes calculées.
+- **Navigation clavier** : `Entrée` et flèches haut/bas déplacent la saisie,
+  `Tab` suit l'ordre naturel.
+- **Enregistrement groupé** : les lignes modifiées sont surlignées et un
+  compteur indique combien restent à enregistrer.
+- **Verrouillage respecté** : session verrouillée ⇒ grilles en lecture seule et
+  actions d'écriture désactivées.
+
+### Une seule source de vérité pour les colonnes calculées
+
+`total`, `statut` et `niveau résolu` sont calculés **dans le navigateur par les
+fonctions de `services/derive.ts`** — exactement celles qu'utilise le serveur.
+L'UI ne réimplémente aucune règle métier, donc aucune divergence n'est possible
+entre ce que l'utilisateur voit en saisissant et ce que la base retiendra. Un
+test e2e le vérifie : il saisit des notes, lit le statut affiché, enregistre,
+recharge la page et confirme que le serveur dit la même chose.
 
 ## Organisation des groupes
 

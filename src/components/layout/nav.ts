@@ -17,7 +17,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/', labelKey: 'nav.dashboard', resource: 'TrainingSession', ready: true },
   { href: '/users', labelKey: 'nav.settings', resource: 'User', ready: true },
-  { href: '/sessions', labelKey: 'nav.sessions', resource: 'TrainingSession', ready: false },
+  { href: '/sessions', labelKey: 'nav.sessions', resource: 'TrainingSession', ready: true },
   { href: '/participants', labelKey: 'nav.participants', resource: 'Participant', ready: false },
   {
     href: '/positioning-tests',
