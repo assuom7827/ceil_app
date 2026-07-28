@@ -8,9 +8,9 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 et 2 terminées.** Structure et outillage en place ;
-> modèle de données normalisé, fonctions dérivées et seed opérationnels.
-> La couche services (règles de gestion) arrive à l'étape 3.
+> **État actuel : étapes 1 à 3 terminées.** Structure et outillage en place ;
+> modèle de données normalisé, fonctions dérivées, seed et couche services
+> métier (114 tests verts). L'API REST arrive à l'étape 4.
 
 ---
 
@@ -67,7 +67,7 @@ courant mais reste en **lecture seule** sur `Training`, `TrainingLevel` et
 | `npm run typecheck`           | TypeScript strict, sans émission         |
 | `npm run lint`                | ESLint (config Next + Prettier)          |
 | `npm run format`              | Prettier (avec tri des classes Tailwind) |
-| `npm test`                    | Tests unitaires Vitest (services)        |
+| `npm test`                    | Tests Vitest (unitaires + intégration)   |
 | `npm run test:e2e`            | Tests end-to-end Playwright              |
 | `npm run db:migrate`          | Migration de développement               |
 | `npm run db:deploy`           | Migrations en production                 |
@@ -187,6 +187,55 @@ matricules sous concurrence.
   sur les documents officiels.
 - **Barème CECRL du seed** : 11 niveaux contigus sur 0..100, le total du
   positionnement étant la somme de deux notes écrites supposées sur 50.
+
+## Organisation des groupes
+
+Une session est **multi-niveaux** : « Anglais 2026-2027 » accueille des A1, des
+B1… et chaque groupe cible **un** niveau. Un même couple (session, niveau) peut
+compter plusieurs groupes — Groupe 1 à 5 — selon l'effectif et la capacité des
+salles.
+
+L'enchaînement est donc :
+
+1. **Inscription** des participants à la session.
+2. **Test de positionnement** → `resolveLevels()` écrit le niveau de chacun dans
+   `Enrollment.assignedLevel`.
+3. **`organizeGroupsByLevel(session)`** ouvre, niveau par niveau,
+   `plafond(effectif ÷ capacité)` groupes. 60 A1 avec des salles de 25 donnent
+   3 groupes ; 10 B2 en donnent 1.
+4. **`assignGroupsByLevel(session)`** range chaque inscrit dans un groupe de
+   **son** niveau, sans dépasser les capacités.
+
+Les groupes d'**examen** suivent une logique distincte : ils ignorent le niveau
+et se remplissent par ordre alphabétique (`organizeGroups` + `assignExamGroups`),
+ce qui donne des listes d'émargement exploitables en salle.
+
+Deux garde-fous : la répartition **complète** les groupes existants au lieu de
+tout rebrasser (relancer après l'arrivée de nouveaux inscrits est sans danger),
+et les inscrits sans niveau attribué sont **comptés à part** (`withoutLevel`)
+plutôt que placés au hasard — signe que le positionnement reste à faire.
+
+## Tests
+
+```bash
+npm test              # 114 tests : unitaires purs + intégration sur PostgreSQL
+```
+
+Les règles qui dépendent réellement du moteur — atomicité des compteurs de
+matricules, contrainte d'unicité des inscriptions, `onDelete: SetNull` lors de
+la réorganisation des groupes — sont vérifiées **sur une vraie base**
+(`ceil_test`), pas contre un mock de Prisma. Créez-la une fois :
+
+```bash
+createdb ceil_test
+DATABASE_URL="postgresql://ceil:ceil@127.0.0.1:5432/ceil_test?schema=public" \
+  npx prisma migrate deploy
+```
+
+Sans base joignable, les suites d'intégration sont **ignorées** plutôt que
+rouges ; les tests purs, eux, tournent partout. Les fichiers s'exécutent en
+série (`fileParallelism: false`) car ils partagent cette base et la remettent à
+zéro entre chaque cas.
 
 ## Internationalisation
 
