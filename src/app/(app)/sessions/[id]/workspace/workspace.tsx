@@ -1,10 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiGet } from '@/lib/api/client';
 import { DeliberationTab } from './deliberation-tab';
+import { DocumentsTab } from './documents-tab';
 import { EnrollmentsTab } from './enrollments-tab';
 import { GroupsTab } from './groups-tab';
 import { PositioningTab } from './positioning-tab';
@@ -31,16 +30,6 @@ export function Workspace({
   const [admission, setAdmission] = React.useState<AdmissionSummary | null>(null);
 
   const locked = session.state === 'LOCKED';
-
-  const refreshAdmission = React.useCallback(async () => {
-    try {
-      setAdmission(
-        await apiGet<AdmissionSummary>(`/api/sessions/${session.id}/deliberation/recompute`),
-      );
-    } catch {
-      // Compteur d'appoint : son échec ne doit pas empêcher de travailler.
-    }
-  }, [session.id]);
 
   return (
     <div className="space-y-6">
@@ -92,23 +81,7 @@ export function Workspace({
         </TabsContent>
 
         <TabsContent value="documents">
-          <div className="space-y-3 rounded-md border border-dashed p-6 text-sm">
-            <p className="flex items-center gap-2 font-medium">
-              <FileText className="size-4" />
-              Documents imprimables
-            </p>
-            <p className="text-muted-foreground">
-              Diplômes des admis, attestations, procès-verbal de délibération et listes par groupe
-              arrivent à l’étape 8, avec le rendu bilingue et le mois de fin de session en arabe.
-            </p>
-            <button
-              type="button"
-              onClick={refreshAdmission}
-              className="text-primary underline underline-offset-4"
-            >
-              Rafraîchir le décompte des admis
-            </button>
-          </div>
+          <DocumentsTab sessionId={session.id} />
         </TabsContent>
       </Tabs>
     </div>
