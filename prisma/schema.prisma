@@ -1,14 +1,22 @@
 // -----------------------------------------------------------------------------
-// CEIL — schéma de données
+// CEIL — schéma de données NORMALISÉ
 //
-// ÉTAPE 1 (scaffold) : seul le modèle `User` est défini, afin de valider la
-// chaîne Prisma (generate / migrate) de bout en bout.
+// Principe fondateur : AUCUNE valeur dérivée n'est stockée.
+// Les valeurs suivantes sont calculées à la lecture par `src/services/derive.ts`
+// et n'apparaissent donc nulle part ci-dessous :
+//   fullName, title, noteTotal, status (admis/refusé), yearFrom/yearTo,
+//   arabicMonthTo, ainsi que la formation et le niveau déductibles d'une
+//   relation parente.
 //
-// ÉTAPE 2 : ce fichier accueillera le modèle normalisé complet
-// (Training, TrainingLevel, Participant, TrainingSession, StudentGroup,
-// Enrollment, PositioningTest/Score, DeliberationEntry, PaymentReceipt, …),
-// sans aucun champ dérivé stocké — les valeurs calculées vivront dans
-// `src/services/derive.ts`.
+// Dé-redondance par rapport au modèle historique :
+//   - `Lot` supprimé            → TrainingSession référence directement
+//                                 sa formation et son niveau.
+//   - `StudentGroupsOrganization` fusionné dans `StudentGroup` via `isTemplate`.
+//   - `Deliberation` supprimée  → la délibération est l'ensemble des
+//                                 DeliberationEntry d'une session ; le seuil
+//                                 vit sur la session.
+//   - Évaluations rattachées à `Enrollment` : le participant n'est jamais
+//     re-référencé, on suit la relation.
 // -----------------------------------------------------------------------------
 
 generator client {
@@ -20,11 +28,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================================
+// Énumérations
+// ============================================================================
+
 enum UserRole {
   MANAGER
   USER
   ADMIN
 }
+
+enum TeacherType {
+  VACATAIRE
+  PERMANENT
+}
+
+enum ParticipantType {
+  STUDENT
+  TEACHER
+}
+
+enum Gender {
+  WOMAN
+  MAN
+}
+
+/// État de verrouillage, partagé par TrainingSession et PositioningTest.
+enum WorkflowState {
+  OPEN
+  LOCKED
+}
+
+enum GroupType {
+  SESSION
+  EXAM
+}
+
+enum EnrollmentKind {
+  NEW
+  RETURNING
+}
+
+enum ReceiptState {
+  DRAFT
+  CONFIRMED
+}
+
+// ============================================================================
+// Sécurité
+// ============================================================================
 
 model User {
   id           String   @id @default(cuid())
@@ -38,4 +90,432 @@ model User {
 
   @@index([role])
   @@map("users")
+}
+
+// ============================================================================
+// Référentiels
+// ============================================================================
+
+model Faculty {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  disabled    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  participants Participant[]
+
+  @@index([disabled])
+  @@map("faculties")
+}
+
+model Speciality {
+  id          String   @id @default(cuid())
+  name        String
+  arName      String?
+  description String?
+  disabled    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name])
+  @@index([disabled])
+  @@map("specialities")
+}
+
+model Teacher {
+  id          String      @id @default(cuid())
+  name        String
+  teacherType TeacherType
+  phone       String?
+  email       String?
+  description String?
+  disabled    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  groups StudentGroup[]
+
+  @@index([disabled])
+  @@index([teacherType])
+  @@map("teachers")
+}
+
+model StudentCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  disabled    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// Relation M2N implicite : pas de table pivot ad hoc.
+  participants Participant[]
+
+  @@index([disabled])
+  @@map("student_categories")
+}
+
+/// Niveau CECRL. L'intervalle de points est semi-ouvert : [minimumPoints, maximumPoints[.
+/// La contrainte `minimumPoints < maximumPoints` est vérifiée côté services.
+model TrainingLevel {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  sequence      Int
+  minimumPoints Int
+  maximumPoints Int
+  description   String?
+  disabled      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  /// Relation M2N implicite avec les formations qui proposent ce niveau.
+  trainings Training[]
+
+  sessions    TrainingSession[]
+  enrollments Enrollment[]      @relation("AssignedLevel")
+
+  @@index([sequence])
+  @@index([disabled])
+  @@map("training_levels")
+}
+
+/// Gabarit graphique des documents officiels. Au plus un défaut actif :
+/// règle appliquée par les services (`disabled = true` ⇒ `isDefault = false`).
+model DiplomaModel {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  isDefault       Boolean  @default(false)
+  universityLogo  String?
+  associationLogo String?
+  backgroundImage String?
+  /// En-tête HTML libre (bilingue).
+  heading         String?
+  disabled        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions         TrainingSession[]
+  positioningTests PositioningTest[]
+
+  @@index([isDefault])
+  @@index([disabled])
+  @@map("diploma_models")
+}
+
+// ============================================================================
+// Catalogue
+// ============================================================================
+
+/// `fullName` ("{frName} ({arName})") est DÉRIVÉ, jamais stocké.
+model Training {
+  id          String   @id @default(cuid())
+  frName      String
+  arName      String?
+  code        String?  @unique
+  description String?
+  disabled    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// Relation M2N implicite avec les niveaux proposés.
+  levels TrainingLevel[]
+
+  sessions         TrainingSession[]
+  positioningTests PositioningTest[]
+
+  @@unique([frName])
+  @@index([disabled])
+  @@map("trainings")
+}
+
+// ============================================================================
+// Participant — personne, indépendante de toute session
+//
+// Ne porte NI groupe NI niveau : ces informations appartiennent à l'inscription.
+// `fullName` est DÉRIVÉ, jamais stocké.
+// ============================================================================
+
+model Participant {
+  id                     String          @id @default(cuid())
+  type                   ParticipantType @default(STUDENT)
+  familyName             String?
+  firstName              String?
+  arabName               String?
+  arabFirstName          String?
+  /// Matricule généré : PART-ETU-{YYYY}-{n} ou PART-ENS-{YYYY}-{n}.
+  registrationNumber     String          @unique
+  birthDate              DateTime?
+  birthPlace             String?
+  arabBirthPlace         String?
+  birthDateIsApproximate Boolean         @default(false)
+  /// Date de naissance approximative en clair (ex. "vers 1998").
+  approximateBirth       String?
+  gender                 Gender?
+  phone                  String?
+  email                  String?
+  note                   String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  facultyId String?
+  faculty   Faculty? @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  /// Relation M2N implicite.
+  categories StudentCategory[]
+
+  enrollments Enrollment[]
+  receipts    PaymentReceipt[]
+
+  @@index([familyName, firstName])
+  @@index([type])
+  @@index([facultyId])
+  @@map("participants")
+}
+
+// ============================================================================
+// Session de formation — entité pivot
+//
+// Dérivés (non stockés) : title, yearFrom, yearTo.
+// ============================================================================
+
+model TrainingSession {
+  id                 String        @id @default(cuid())
+  code               String?       @unique
+  academicYear       String?
+  dateFrom           DateTime?
+  dateTo             DateTime?
+  /// Seuil d'admission propre à la session (somme des 4 compétences).
+  admissionThreshold Float         @default(50)
+  /// Préfixe des matricules d'inscription générés pour cette session.
+  matriculePrefix    String?
+  state              WorkflowState @default(OPEN)
+  disabled           Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  trainingId String
+  training   Training @relation(fields: [trainingId], references: [id], onDelete: Restrict)
+
+  trainingLevelId String?
+  trainingLevel   TrainingLevel? @relation(fields: [trainingLevelId], references: [id], onDelete: SetNull)
+
+  diplomaModelId String?
+  diplomaModel   DiplomaModel? @relation(fields: [diplomaModelId], references: [id], onDelete: SetNull)
+
+  enrollments Enrollment[]
+  /// Groupes réels de la session (les gabarits n'ont pas de session).
+  groups      StudentGroup[]
+  receipts    PaymentReceipt[]
+
+  @@index([trainingId])
+  @@index([trainingLevelId])
+  @@index([academicYear])
+  @@index([state])
+  @@index([disabled])
+  @@map("training_sessions")
+}
+
+// ============================================================================
+// Groupe — gabarit et groupe réel dans une seule table
+//
+// isTemplate = true  → gabarit réutilisable, trainingSessionId = null
+// isTemplate = false → groupe réel rattaché à une session
+// ============================================================================
+
+model StudentGroup {
+  id           String    @id @default(cuid())
+  name         String
+  groupType    GroupType
+  isTemplate   Boolean   @default(false)
+  sequence     Int       @default(0)
+  site         String?
+  dateStart    DateTime?
+  dateEnd      DateTime?
+  /// Horaires au format "HH:mm" : une heure murale, sans fuseau ni date.
+  startTime    String?
+  endTime      String?
+  hourlyVolume Int?
+  capacity     Int?
+  disabled     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  trainingSessionId String?
+  trainingSession   TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: Cascade)
+
+  teacherId String?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  sessionEnrollments Enrollment[] @relation("SessionGroup")
+  examEnrollments    Enrollment[] @relation("ExamGroup")
+
+  @@index([trainingSessionId, groupType])
+  @@index([isTemplate, groupType, sequence])
+  @@index([disabled])
+  @@map("student_groups")
+}
+
+// ============================================================================
+// Inscription — relie participant ↔ session
+//
+// `training` et `trainingLevel` de la session NE SONT PAS recopiés ici :
+// on suit la relation `trainingSession`.
+// ============================================================================
+
+model Enrollment {
+  id                 String         @id @default(cuid())
+  kind               EnrollmentKind @default(NEW)
+  /// Matricule d'inscription, construit depuis `matriculePrefix` de la session.
+  registrationNumber String?        @unique
+  enrolledAt         DateTime       @default(now())
+  responsible        String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  trainingSessionId String
+  trainingSession   TrainingSession @relation(fields: [trainingSessionId], references: [id], onDelete: Cascade)
+
+  /// Niveau attribué au participant : donnée décidée, pas dérivée.
+  assignedLevelId String?
+  assignedLevel   TrainingLevel? @relation("AssignedLevel", fields: [assignedLevelId], references: [id], onDelete: SetNull)
+
+  sessionGroupId String?
+  sessionGroup   StudentGroup? @relation("SessionGroup", fields: [sessionGroupId], references: [id], onDelete: SetNull)
+
+  examGroupId String?
+  examGroup   StudentGroup? @relation("ExamGroup", fields: [examGroupId], references: [id], onDelete: SetNull)
+
+  positioningScore  PositioningScore?
+  deliberationEntry DeliberationEntry?
+
+  /// Empêche toute inscription en double à une même session.
+  @@unique([participantId, trainingSessionId])
+  @@index([trainingSessionId])
+  @@index([participantId])
+  @@index([sessionGroupId])
+  @@index([examGroupId])
+  @@map("enrollments")
+}
+
+// ============================================================================
+// Test de positionnement
+// ============================================================================
+
+model PositioningTest {
+  id       String        @id @default(cuid())
+  title    String?
+  date     DateTime?
+  state    WorkflowState @default(OPEN)
+  disabled Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trainingId String
+  training   Training @relation(fields: [trainingId], references: [id], onDelete: Restrict)
+
+  diplomaModelId String?
+  diplomaModel   DiplomaModel? @relation(fields: [diplomaModelId], references: [id], onDelete: SetNull)
+
+  scores PositioningScore[]
+
+  @@index([trainingId])
+  @@index([state])
+  @@index([disabled])
+  @@map("positioning_tests")
+}
+
+/// Notes écrites du test. `total` (E.E + C.E) et le niveau résolu sont DÉRIVÉS.
+/// L'attribution effective écrit dans `Enrollment.assignedLevel`.
+model PositioningScore {
+  id                   String   @id @default(cuid())
+  writtenExpression    Float?
+  writtenComprehension Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  enrollmentId String     @unique
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  positioningTestId String
+  positioningTest   PositioningTest @relation(fields: [positioningTestId], references: [id], onDelete: Cascade)
+
+  @@index([positioningTestId])
+  @@map("positioning_scores")
+}
+
+// ============================================================================
+// Délibération
+//
+// Pas d'entité `Deliberation` : la délibération d'une session est l'ensemble
+// de ses entries, et le seuil vit sur `TrainingSession.admissionThreshold`.
+// `total` et `status` sont DÉRIVÉS.
+// ============================================================================
+
+model DeliberationEntry {
+  id                   String   @id @default(cuid())
+  oralExpression       Float?
+  writtenExpression    Float?
+  oralComprehension    Float?
+  writtenComprehension Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  enrollmentId String     @unique
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@map("deliberation_entries")
+}
+
+// ============================================================================
+// Paiement
+// ============================================================================
+
+model PaymentReceipt {
+  id            String       @id @default(cuid())
+  state         ReceiptState @default(DRAFT)
+  paymentDate   DateTime?
+  amount        Decimal      @db.Decimal(10, 2)
+  memo          String?
+  /// Numéro généré : PAY-{YYYY}-{n}.
+  receiptNumber String       @unique
+  disabled      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  trainingSessionId String?
+  trainingSession   TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
+
+  @@index([participantId])
+  @@index([trainingSessionId])
+  @@index([state])
+  @@index([disabled])
+  @@map("payment_receipts")
+}
+
+// ============================================================================
+// Allocation des numéros de série
+//
+// Ce n'est PAS une donnée dérivée mais un état d'allocation : le compteur
+// garantit l'unicité des matricules sous concurrence (incrément en transaction).
+// ============================================================================
+
+model SequenceCounter {
+  id    String @id @default(cuid())
+  /// Portée du compteur, ex. "PART-ETU-2026", "PAY-2026", "ENROLL-{sessionId}".
+  scope String @unique
+  value Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sequence_counters")
 }
