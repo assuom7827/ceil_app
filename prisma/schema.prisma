@@ -1,0 +1,41 @@
+// -----------------------------------------------------------------------------
+// CEIL — schéma de données
+//
+// ÉTAPE 1 (scaffold) : seul le modèle `User` est défini, afin de valider la
+// chaîne Prisma (generate / migrate) de bout en bout.
+//
+// ÉTAPE 2 : ce fichier accueillera le modèle normalisé complet
+// (Training, TrainingLevel, Participant, TrainingSession, StudentGroup,
+// Enrollment, PositioningTest/Score, DeliberationEntry, PaymentReceipt, …),
+// sans aucun champ dérivé stocké — les valeurs calculées vivront dans
+// `src/services/derive.ts`.
+// -----------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  MANAGER
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(USER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+  @@map("users")
+}
