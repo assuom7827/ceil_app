@@ -13,7 +13,7 @@ export default async function HomePage() {
     { step: 1, label: 'Scaffold (Next.js, Prisma, Auth, i18n, tests)', done: true },
     { step: 2, label: 'Schéma Prisma normalisé + dérivés + seed', done: true },
     { step: 3, label: 'Couche services testée (règles de gestion)', done: true },
-    { step: 4, label: 'API REST + RBAC + gestion d’erreurs', done: false },
+    { step: 4, label: 'API REST + RBAC + gestion d’erreurs', done: true },
     { step: 5, label: 'Authentification et rôles', done: false },
     { step: 6, label: 'Espace de travail Session (grilles éditables)', done: false },
     { step: 7, label: 'CRUD référentiels et catalogue', done: false },
@@ -39,7 +39,7 @@ export default async function HomePage() {
         <CardHeader>
           <CardTitle>Avancement de l’implémentation</CardTitle>
           <CardDescription>
-            Étapes 1 à 3 terminées : structure, modèle de données normalisé et couche métier testée.
+            Étapes 1 à 4 terminées : structure, modèle normalisé, couche métier et API REST.
           </CardDescription>
         </CardHeader>
         <CardContent>

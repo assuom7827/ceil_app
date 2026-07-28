@@ -8,9 +8,10 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 3 terminées.** Structure et outillage en place ;
-> modèle de données normalisé, fonctions dérivées, seed et couche services
-> métier (114 tests verts). L'API REST arrive à l'étape 4.
+> **État actuel : étapes 1 à 4 terminées.** Structure et outillage en place ;
+> modèle de données normalisé, fonctions dérivées, seed, couche services métier
+> et API REST complète (158 tests verts). L'authentification et l'espace de
+> travail Session arrivent aux étapes 5 et 6.
 
 ---
 
@@ -187,6 +188,71 @@ matricules sous concurrence.
   sur les documents officiels.
 - **Barème CECRL du seed** : 11 niveaux contigus sur 0..100, le total du
   positionnement étant la somme de deux notes écrites supposées sur 50.
+
+## API REST
+
+Toutes les routes sont sous `/api`, authentifiées, et vérifient le RBAC **côté
+serveur** avant d'atteindre la moindre donnée.
+
+### CRUD
+
+`faculties` · `specialities` · `teachers` · `student-categories` ·
+`training-levels` · `diploma-models` · `trainings` · `participants` ·
+`sessions` · `groups` · `positioning-tests` · `payment-receipts`
+
+Chacune expose `GET` (liste) et `POST` sur la collection, `GET` / `PATCH` /
+`DELETE` sur `/[id]`. Paramètres de liste :
+
+| Paramètre         | Effet                                                            |
+| ----------------- | ---------------------------------------------------------------- |
+| `page`, `perPage` | Pagination (défaut 1 / 25, max 200)                              |
+| `sort`, `order`   | Tri — **restreint aux colonnes déclarées** par ressource         |
+| `q`               | Recherche insensible à la casse sur les champs texte déclarés    |
+| `includeDisabled` | `true` pour inclure les éléments désactivés (masqués par défaut) |
+
+Réponse : `{ data, meta: { page, perPage, total, totalPages } }`.
+
+### Actions
+
+| Méthode et route                                              | Effet                                                                              |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `POST /api/sessions/{id}/lock` · `/unlock`                    | Gèle ou rouvre la session                                                          |
+| `POST /api/sessions/{id}/enroll`                              | Inscription simplifiée : sélection **et** créations à la volée, en une transaction |
+| `GET /api/sessions/{id}/enrollments`                          | Grille des inscrits, `fullName` dérivé                                             |
+| `POST /api/sessions/{id}/import-enrollments`                  | Import Excel/CSV avec rapport                                                      |
+| `POST /api/sessions/{id}/assign-group`                        | Affectation de groupe en masse                                                     |
+| `GET /api/sessions/{id}/deliberation`                         | Lignes avec `total` et `status` **dérivés**                                        |
+| `PUT /api/sessions/{id}/deliberation`                         | Enregistrement en masse depuis la grille                                           |
+| `POST /api/sessions/{id}/deliberation/import-scores`          | Import des 4 notes                                                                 |
+| `POST /api/sessions/{id}/deliberation/recompute`              | Renvoie admis / ajournés / non délibérés                                           |
+| `POST /api/sessions/{id}/groups/organize?type=SESSION\|EXAM`  | Instancie les gabarits                                                             |
+| `POST /api/sessions/{id}/groups/organize-by-level`            | Ouvre les groupes par niveau, dimensionnés sur l'effectif                          |
+| `POST /api/sessions/{id}/groups/assign-by-level`              | Range chaque inscrit dans un groupe de son niveau                                  |
+| `POST /api/sessions/{id}/groups/assign-exam`                  | Remplit les salles d'examen                                                        |
+| `GET` · `PUT /api/positioning-tests/{id}/scores`              | Grille du positionnement, `total` et niveau résolu dérivés                         |
+| `POST /api/positioning-tests/{id}/resolve-levels`             | Applique les niveaux résolus                                                       |
+| `POST /api/positioning-tests/{id}/import-scores`              | Import des 2 notes écrites                                                         |
+| `POST /api/positioning-tests/{id}/lock` · `/unlock`           | Gèle ou rouvre le test                                                             |
+| `PATCH` · `DELETE /api/enrollments/{id}`                      | Édition inline, retrait                                                            |
+| `POST /api/payment-receipts/{id}/confirm` · `/reset-to-draft` | Cycle du reçu                                                                      |
+| `GET /api/dashboard/stats`                                    | KPIs, admis **calculés** et non lus                                                |
+
+### Erreurs
+
+Une forme unique, produite par un wrapper unique : `{ error, message, details? }`.
+
+| Statut | `error`        | Cas                                                     |
+| ------ | -------------- | ------------------------------------------------------- |
+| 400    | `VALIDATION`   | Zod ; `details` liste `{ path, message }` par champ     |
+| 401    | `UNAUTHORIZED` | Session absente                                         |
+| 403    | `FORBIDDEN`    | Rôle insuffisant ; `details` donne ressource et rôle    |
+| 404    | `NOT_FOUND`    | Entité absente                                          |
+| 409    | `LOCKED`       | Session ou test verrouillé                              |
+| 409    | `CONFLICT`     | Doublon (unicité) ou référence empêchant la suppression |
+| 500    | `INTERNAL`     | Journalisé côté serveur, jamais détaillé au client      |
+
+Les erreurs Prisma sont traduites plutôt que remontées brutes : `P2002` devient
+un 409 lisible, `P2025` un 404, `P2003` un 409 explicite sur la référence.
 
 ## Organisation des groupes
 

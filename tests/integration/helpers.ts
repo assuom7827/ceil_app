@@ -10,6 +10,7 @@
  * que rouges : les tests unitaires purs, eux, tournent partout.
  */
 import { PrismaClient } from '@prisma/client';
+import { allocateParticipantRegistrationNumber } from '@/services/registration-numbers';
 
 export const prisma = new PrismaClient();
 
@@ -108,6 +109,11 @@ export async function createSession(
 
 let participantCounter = 0;
 
+/**
+ * Les matricules passent par l'allocateur, comme en production : les forger à
+ * la main désynchroniserait le compteur et provoquerait une collision au
+ * premier participant créé par l'application.
+ */
 export async function createParticipants(count: number) {
   const participants = [];
   for (let i = 0; i < count; i += 1) {
@@ -117,7 +123,7 @@ export async function createParticipants(count: number) {
         data: {
           familyName: `NOM${String(participantCounter).padStart(3, '0')}`,
           firstName: `Prenom${participantCounter}`,
-          registrationNumber: `PART-ETU-2026-${String(participantCounter).padStart(4, '0')}`,
+          registrationNumber: await allocateParticipantRegistrationNumber(prisma, 'STUDENT'),
         },
       }),
     );
