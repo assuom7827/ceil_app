@@ -70,9 +70,45 @@
 }
 
 @layer components {
-  /* Styles partagés par les documents imprimables (diplôme, PV, attestation) */
+  /* Feuille A4 : mêmes dimensions à l'écran et à l'impression, pour que
+     l'aperçu soit fidèle au papier. */
   .print-sheet {
-    @apply shadow-print mx-auto bg-white text-black;
+    @apply shadow-print mx-auto mb-6 bg-white text-black;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
+    box-sizing: border-box;
+  }
+
+  .print-sheet--landscape {
+    width: 297mm;
+    min-height: 210mm;
+  }
+
+  /* Bloc arabe : sens de lecture inversé et police adaptée, quelle que soit
+     la langue de l'interface. */
+  .rtl-block {
+    direction: rtl;
+    text-align: right;
+    font-family: var(--font-arabic), 'Amiri', serif;
+  }
+
+  .ltr-block {
+    direction: ltr;
+    text-align: left;
+  }
+
+  .doc-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .doc-table th,
+  .doc-table td {
+    @apply border border-black/40 px-2 py-1;
+  }
+
+  .doc-table thead th {
+    @apply bg-black/5 text-center font-semibold;
   }
 }
 
@@ -87,14 +123,36 @@
     display: none !important;
   }
 
+  body {
+    background: white;
+  }
+
   .print-sheet {
     box-shadow: none;
     margin: 0;
+    /* Une feuille par page ; la dernière ne force pas de page vide. */
     page-break-after: always;
+  }
+
+  .print-sheet:last-child {
+    page-break-after: auto;
+  }
+
+  /* Une ligne de tableau ne doit jamais être coupée entre deux pages. */
+  .doc-table tr {
+    page-break-inside: avoid;
+  }
+
+  .doc-table thead {
+    display: table-header-group;
   }
 
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 0;
+  }
+
+  @page landscape {
+    size: A4 landscape;
   }
 }

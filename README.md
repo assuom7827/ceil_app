@@ -8,11 +8,10 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 7 terminées.** L'application est fonctionnelle de
-> bout en bout : référentiels, catalogue, participants, sessions, espace de
-> travail avec grilles éditables, imports et organisation des groupes.
-> 173 tests unitaires et d'intégration, 21 tests e2e. Restent les documents
-> imprimables (8) et la documentation finale (10).
+> **État actuel : étapes 1 à 8 terminées.** Le cycle métier est couvert de
+> l'inscription aux documents officiels. 184 tests unitaires et d'intégration,
+> 26 tests e2e. Restent le parcours e2e complet (9) et la documentation
+> finale (10).
 
 ---
 
@@ -335,6 +334,41 @@ L'UI ne réimplémente aucune règle métier, donc aucune divergence n'est possi
 entre ce que l'utilisateur voit en saisissant et ce que la base retiendra. Un
 test e2e le vérifie : il saisit des notes, lit le statut affiché, enregistre,
 recharge la page et confirme que le serveur dit la même chose.
+
+## Documents officiels
+
+Rendus HTML mis en page en **A4**, imprimables directement depuis le navigateur
+(`Ctrl+P` → PDF). Ils s'ouvrent depuis l'onglet **Documents** de l'espace de
+travail, ou par URL directe.
+
+| Document                      | Route                               | Source                                                   |
+| ----------------------------- | ----------------------------------- | -------------------------------------------------------- |
+| Procès-verbal de délibération | `/print/sessions/{id}/minutes`      | Toutes les inscriptions, notées ou non                   |
+| Diplômes                      | `/print/sessions/{id}/diplomas`     | **Uniquement les admis** ; `?enrollmentId=` pour un seul |
+| Attestations                  | `/print/sessions/{id}/attestations` | Toute inscription, admise ou non                         |
+| Liste d'émargement            | `/print/sessions/{id}/list`         | `?groupId=` pour un groupe, sinon toute la session       |
+
+### Bilinguisme
+
+Chaque document juxtapose un bloc arabe en **sens de lecture inversé** (police
+Amiri) et un bloc français. La date de délivrance porte le **mois de fin de
+session en arabe**, convention algérienne — juin s'écrit `جوان`.
+
+L'en-tête (logos, mentions officielles) vient du `DiplomaModel` de la session ;
+si celui-ci est absent **ou désactivé**, le modèle par défaut prend le relais.
+
+### Garde-fous
+
+- **Un diplôme n'est jamais émis pour un ajourné.** Le filtre est appliqué dans
+  le service, pas laissé à l'appelant ; demander explicitement le diplôme d'un
+  ajourné renvoie un 422, distinct du 404 d'une inscription inconnue.
+- Les valeurs imprimées proviennent des **mêmes fonctions dérivées** que la
+  grille de délibération : un diplôme ne peut pas afficher un total différent de
+  celui saisi à l'écran.
+- Les pages d'impression sont **authentifiées** comme le reste de
+  l'application : un document officiel ne s'ouvre pas sans session.
+- Les tableaux ne coupent jamais une ligne entre deux pages, et l'en-tête se
+  répète sur chaque feuille.
 
 ## Organisation des groupes
 
