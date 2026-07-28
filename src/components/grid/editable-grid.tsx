@@ -160,25 +160,67 @@ export function EditableGrid<TRow>({
   const allSelected =
     selection !== undefined && rows.length > 0 && selection.selected.size === rows.length;
 
-  const tableColumns = React.useMemo<Array<ColumnDef<TRow>>>(() => {
-    const definitions: Array<ColumnDef<TRow>> = [];
+  /**
+   * Propriétés les plus récentes, lues à l'intérieur des rendus de cellule.
+   *
+   * Sans ce détour, `tableColumns` se reconstruirait à CHAQUE frappe (les
+   * `columns` du parent dépendent des valeurs saisies). TanStack recréerait
+   * alors ses colonnes, démontant et remontant les champs de saisie : la frappe
+   * suivante viserait un nœud détaché et serait perdue. Les colonnes restent
+   * donc stables tant que leur structure ne change pas.
+   */
+  const latest = React.useRef({
+    columns,
+    onChange,
+    readOnly,
+    selection,
+    rowId,
+    allSelected,
+    handleKeyDown,
+    handlePaste,
+  });
+  latest.current = {
+    columns,
+    onChange,
+    readOnly,
+    selection,
+    rowId,
+    allSelected,
+    handleKeyDown,
+    handlePaste,
+  };
 
-    if (selection) {
+  /** Change uniquement quand la STRUCTURE de la grille change. */
+  const structure = `${columns.map((column) => `${column.key}:${column.kind}`).join('|')}#${
+    selection ? 'sel' : 'nosel'
+  }#${readOnly ? 'ro' : 'rw'}`;
+
+  const buildColumns = (): Array<ColumnDef<TRow>> => {
+    const definitions: Array<ColumnDef<TRow>> = [];
+    const { selection: selectionRef } = latest.current;
+
+    if (selectionRef) {
       definitions.push({
         id: '__selection',
-        header: () => (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => selection.onToggleAll(checked === true)}
-            aria-label="Tout sélectionner"
-          />
-        ),
-        cell: ({ row }) => {
-          const id = rowId(row.original);
+        header: () => {
+          const current = latest.current.selection;
+          if (!current) return null;
           return (
             <Checkbox
-              checked={selection.selected.has(id)}
-              onCheckedChange={(checked) => selection.onToggle(id, checked === true)}
+              checked={latest.current.allSelected}
+              onCheckedChange={(checked) => current.onToggleAll(checked === true)}
+              aria-label="Tout sélectionner"
+            />
+          );
+        },
+        cell: ({ row }) => {
+          const current = latest.current.selection;
+          if (!current) return null;
+          const id = latest.current.rowId(row.original);
+          return (
+            <Checkbox
+              checked={current.selected.has(id)}
+              onCheckedChange={(checked) => current.onToggle(id, checked === true)}
               aria-label="Sélectionner la ligne"
             />
           );
@@ -186,27 +228,36 @@ export function EditableGrid<TRow>({
       });
     }
 
-    columns.forEach((column) => {
+    latest.current.columns.forEach((column) => {
       definitions.push({
         id: column.key,
         header: () => column.header,
         cell: ({ row }) => {
-          const editableIndex = editableColumns.indexOf(column);
-          const position: CellRef = { row: row.index, col: editableIndex };
-          const value = column.get(row.original);
+          // Les fonctions de la colonne sont relues à chaque rendu : la version
+          // capturée à la création des définitions serait figée.
+          const live =
+            latest.current.columns.find((candidate) => candidate.key === column.key) ?? column;
+          const editableColumnsNow = latest.current.columns.filter(isEditable);
+          const position: CellRef = {
+            row: row.index,
+            col: editableColumnsNow.findIndex((candidate) => candidate.key === column.key),
+          };
+          const value = live.get(row.original);
+          const onChangeNow = latest.current.onChange;
+          const rowIdNow = latest.current.rowId;
 
           if (column.kind === 'computed') {
             return (
-              <div className={cn('px-2 py-1.5 text-sm', column.align === 'end' && 'text-end')}>
-                {column.render ? column.render(row.original) : value}
+              <div className={cn('px-2 py-1.5 text-sm', live.align === 'end' && 'text-end')}>
+                {live.render ? live.render(row.original) : value}
               </div>
             );
           }
 
-          if (readOnly) {
+          if (latest.current.readOnly) {
             return (
-              <div className={cn('px-2 py-1.5 text-sm', column.align === 'end' && 'text-end')}>
-                {column.render ? column.render(row.original) : value || '—'}
+              <div className={cn('px-2 py-1.5 text-sm', live.align === 'end' && 'text-end')}>
+                {live.render ? live.render(row.original) : value || '—'}
               </div>
             );
           }
@@ -216,12 +267,14 @@ export function EditableGrid<TRow>({
               <select
                 ref={(element) => registerCell(position, element)}
                 value={value}
-                onChange={(event) => onChange(rowId(row.original), column.key, event.target.value)}
-                onKeyDown={(event) => handleKeyDown(event, position)}
+                onChange={(event) =>
+                  onChangeNow(rowIdNow(row.original), column.key, event.target.value)
+                }
+                onKeyDown={(event) => latest.current.handleKeyDown(event, position)}
                 className="h-8 w-full rounded border border-transparent bg-transparent px-1 text-sm hover:border-input focus:border-ring focus:outline-none"
               >
                 <option value="">—</option>
-                {column.options?.map((option) => (
+                {live.options?.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -230,7 +283,7 @@ export function EditableGrid<TRow>({
             );
           }
 
-          const error = column.validate?.(value) ?? null;
+          const error = live.validate?.(value) ?? null;
 
           return (
             <div>
@@ -238,15 +291,17 @@ export function EditableGrid<TRow>({
                 ref={(element) => registerCell(position, element)}
                 value={value}
                 inputMode={column.kind === 'number' ? 'decimal' : undefined}
-                onChange={(event) => onChange(rowId(row.original), column.key, event.target.value)}
-                onKeyDown={(event) => handleKeyDown(event, position)}
-                onPaste={(event) => handlePaste(event, position)}
+                onChange={(event) =>
+                  onChangeNow(rowIdNow(row.original), column.key, event.target.value)
+                }
+                onKeyDown={(event) => latest.current.handleKeyDown(event, position)}
+                onPaste={(event) => latest.current.handlePaste(event, position)}
                 aria-label={column.header}
                 aria-invalid={error !== null}
                 className={cn(
                   'h-8 w-full rounded border border-transparent bg-transparent px-1 text-sm',
                   'hover:border-input focus:border-ring focus:outline-none',
-                  column.align === 'end' && 'text-end',
+                  live.align === 'end' && 'text-end',
                   error && 'border-destructive',
                 )}
               />
@@ -258,18 +313,20 @@ export function EditableGrid<TRow>({
     });
 
     return definitions;
-  }, [
-    allSelected,
-    columns,
-    editableColumns,
-    handleKeyDown,
-    handlePaste,
-    onChange,
-    readOnly,
-    registerCell,
-    rowId,
-    selection,
-  ]);
+  };
+
+  /**
+   * Mémorisation manuelle : les définitions ne sont reconstruites que si la
+   * structure change. `useMemo` ne conviendrait pas — ses dépendances porteraient
+   * sur des valeurs qui changent à chaque frappe, exactement ce qu'on évite ici.
+   */
+  const cache = React.useRef<{ signature: string; definitions: Array<ColumnDef<TRow>> } | null>(
+    null,
+  );
+  if (!cache.current || cache.current.signature !== structure) {
+    cache.current = { signature: structure, definitions: buildColumns() };
+  }
+  const tableColumns = cache.current.definitions;
 
   const table = useReactTable({
     data: rows as TRow[],
