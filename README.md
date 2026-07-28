@@ -8,8 +8,9 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étape 1 (scaffold) terminée.** La structure, l'outillage et la
-> chaîne de build sont en place ; le modèle de données complet arrive à l'étape 2.
+> **État actuel : étapes 1 et 2 terminées.** Structure et outillage en place ;
+> modèle de données normalisé, fonctions dérivées et seed opérationnels.
+> La couche services (règles de gestion) arrive à l'étape 3.
 
 ---
 
@@ -128,6 +129,64 @@ ceil_app/
    formation et le niveau d'une inscription, sont **calculés à la lecture** par
    `src/services/derive.ts` — la seule source de vérité, importée par l'API
    **et** par l'UI.
+
+## Modèle de données normalisé
+
+```mermaid
+erDiagram
+    Training ||--o{ TrainingSession : "propose"
+    Training }o--o{ TrainingLevel : "niveaux (M2N)"
+    TrainingLevel |o--o{ TrainingSession : "niveau visé"
+    TrainingSession ||--o{ Enrollment : "inscrits"
+    TrainingSession ||--o{ StudentGroup : "groupes réels"
+    Participant ||--o{ Enrollment : "inscriptions"
+    Participant }o--o{ StudentCategory : "catégories (M2N)"
+    Participant }o--|| Faculty : "faculté"
+    Enrollment |o--|| TrainingLevel : "niveau attribué"
+    Enrollment |o--|| StudentGroup : "groupe session / examen"
+    Enrollment ||--o| PositioningScore : "1-1"
+    Enrollment ||--o| DeliberationEntry : "1-1"
+    PositioningTest ||--o{ PositioningScore : "notes"
+    Participant ||--o{ PaymentReceipt : "reçus"
+    DiplomaModel |o--o{ TrainingSession : "gabarit"
+    Teacher |o--o{ StudentGroup : "enseignant"
+```
+
+### Note de dé-redondance
+
+Le modèle historique dupliquait des données entre tables. Voici ce qui a été
+supprimé, et pourquoi :
+
+| Supprimé                                              | Remplacé par                                                          | Raison                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Entité `Lot`                                          | `TrainingSession` référence directement `training` et `trainingLevel` | Un lot n'ajoutait qu'un regroupement ; filtrer sur _formation + année_ suffit     |
+| `StudentGroupsOrganization`                           | `StudentGroup.isTemplate`                                             | Deux tables aux colonnes identiques ; un booléen distingue gabarit et groupe réel |
+| Entité `Deliberation`                                 | l'ensemble des `DeliberationEntry` d'une session                      | La table recopiait session/formation/niveau ; le seuil vit sur la session         |
+| Participant re-référencé sur chaque évaluation        | `PositioningScore` et `DeliberationEntry` pointent vers `Enrollment`  | Le participant se retrouve en suivant `enrollment.participant`                    |
+| `training` / `trainingLevel` copiés sur l'inscription | relation `enrollment.trainingSession`                                 | Une copie peut diverger de sa source ; la relation, non                           |
+
+**Aucune valeur dérivée n'est stockée.** Ces champs n'existent dans aucune
+table et sont calculés à la lecture par `src/services/derive.ts` :
+
+`fullName` · `title` · `noteTotal` · `status` (admis/ajourné) · `yearFrom` ·
+`yearTo` · `arabicMonthTo` · toute `training`/`trainingLevel` déductible d'une
+relation parente.
+
+Le seul compteur persistant est `SequenceCounter` : ce n'est pas une valeur
+dérivée mais un **état d'allocation**, nécessaire pour garantir l'unicité des
+matricules sous concurrence.
+
+### Conventions
+
+- **Intervalles de niveau semi-ouverts** `[minimumPoints, maximumPoints[` : un
+  total de 50 tombe dans `B1.1 [50,60[`, jamais dans `A2.2 [40,50[`.
+- **Ligne vierge ≠ zéro** : un total est `null` tant qu'aucune note n'est
+  saisie, et le statut d'admission reste `null` (non délibéré) plutôt que
+  « ajourné ».
+- **Mois arabes** : convention algérienne (`جانفي`, `فيفري`, `مارس`…), utilisée
+  sur les documents officiels.
+- **Barème CECRL du seed** : 11 niveaux contigus sur 0..100, le total du
+  positionnement étant la somme de deux notes écrites supposées sur 50.
 
 ## Internationalisation
 
