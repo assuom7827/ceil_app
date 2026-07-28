@@ -211,8 +211,8 @@ export function PositioningTab({
   if (tests?.length === 0) {
     return (
       <p className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
-        Aucun test de positionnement pour la formation de cette session. Créez-en un via{' '}
-        <code>POST /api/positioning-tests</code> ; l’écran de gestion des tests arrive à l’étape 7.
+        Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l’écran
+        « Tests de positionnement ».
       </p>
     );
   }
@@ -262,8 +262,8 @@ export function PositioningTab({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Total = E.E + C.E. Le niveau résolu applique l’intervalle semi-ouvert de chaque niveau ;
-        « Déterminer les niveaux » l’inscrit dans le niveau attribué de chaque inscription.
+        Total = E.E + C.E. Le niveau résolu applique l’intervalle semi-ouvert de chaque niveau ; «
+        Déterminer les niveaux » l’inscrit dans le niveau attribué de chaque inscription.
       </p>
 
       <FeedbackBanner feedback={feedback} />

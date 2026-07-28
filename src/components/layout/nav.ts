@@ -9,7 +9,8 @@ export interface NavItem {
   resource: Resource;
   /**
    * `false` tant que l'écran n'existe pas : l'entrée s'affiche désactivée
-   * plutôt que de mener à une 404. Passera à `true` aux étapes 6 et 7.
+   * plutôt que de mener à une 404. Tous les écrans existent désormais ; le
+   * mécanisme est conservé pour les modules à venir.
    */
   ready: boolean;
 }
@@ -18,16 +19,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/', labelKey: 'nav.dashboard', resource: 'TrainingSession', ready: true },
   { href: '/users', labelKey: 'nav.settings', resource: 'User', ready: true },
   { href: '/sessions', labelKey: 'nav.sessions', resource: 'TrainingSession', ready: true },
-  { href: '/participants', labelKey: 'nav.participants', resource: 'Participant', ready: false },
+  { href: '/participants', labelKey: 'nav.participants', resource: 'Participant', ready: true },
   {
     href: '/positioning-tests',
     labelKey: 'nav.positioningTests',
     resource: 'PositioningTest',
-    ready: false,
+    ready: true,
   },
-  { href: '/trainings', labelKey: 'nav.trainings', resource: 'Training', ready: false },
-  { href: '/payments', labelKey: 'nav.payments', resource: 'PaymentReceipt', ready: false },
-  { href: '/references', labelKey: 'nav.references', resource: 'Faculty', ready: false },
+  { href: '/trainings', labelKey: 'nav.trainings', resource: 'Training', ready: true },
+  { href: '/payments', labelKey: 'nav.payments', resource: 'PaymentReceipt', ready: true },
+  { href: '/references', labelKey: 'nav.references', resource: 'Faculty', ready: true },
 ];
 
 /**

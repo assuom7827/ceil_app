@@ -18,12 +18,7 @@ export class ApiError extends Error {
   readonly code: ServiceErrorCode | 'INTERNAL';
   readonly details?: unknown;
 
-  constructor(
-    status: number,
-    code: ApiError['code'],
-    message: string,
-    details?: unknown,
-  ) {
+  constructor(status: number, code: ApiError['code'], message: string, details?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;

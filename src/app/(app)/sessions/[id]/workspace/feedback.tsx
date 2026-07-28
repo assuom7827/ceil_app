@@ -21,27 +21,23 @@ export function useAction() {
   const [pending, setPending] = React.useState(false);
   const [feedback, setFeedback] = React.useState<Feedback | null>(null);
 
-  const run = React.useCallback(
-    async (action: () => Promise<string | void>): Promise<boolean> => {
-      setPending(true);
-      setFeedback(null);
-      try {
-        const message = await action();
-        if (message) setFeedback({ kind: 'success', message });
-        return true;
-      } catch (error) {
-        setFeedback({
-          kind: 'error',
-          message:
-            error instanceof ApiError ? error.message : 'Une erreur inattendue est survenue.',
-        });
-        return false;
-      } finally {
-        setPending(false);
-      }
-    },
-    [],
-  );
+  const run = React.useCallback(async (action: () => Promise<string | void>): Promise<boolean> => {
+    setPending(true);
+    setFeedback(null);
+    try {
+      const message = await action();
+      if (message) setFeedback({ kind: 'success', message });
+      return true;
+    } catch (error) {
+      setFeedback({
+        kind: 'error',
+        message: error instanceof ApiError ? error.message : 'Une erreur inattendue est survenue.',
+      });
+      return false;
+    } finally {
+      setPending(false);
+    }
+  }, []);
 
   return { pending, feedback, setFeedback, run };
 }

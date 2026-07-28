@@ -83,6 +83,27 @@ export const diplomaModelCrud: CrudConfig<Record<string, unknown>> = {
   searchable: ['name'],
   sortable: ['name', 'createdAt'],
   defaultOrderBy: { name: 'asc' },
+  /**
+   * Deux invariants, impossibles à exprimer en contrainte de base :
+   *   — au plus UN modèle par défaut actif ;
+   *   — un modèle désactivé ne peut pas rester le modèle par défaut.
+   */
+  afterWrite: async (db, record) => {
+    const model = record as { id: string; isDefault: boolean; disabled: boolean };
+
+    if (model.disabled && model.isDefault) {
+      return db.diplomaModel.update({ where: { id: model.id }, data: { isDefault: false } });
+    }
+
+    if (model.isDefault) {
+      await db.diplomaModel.updateMany({
+        where: { id: { not: model.id }, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    return model;
+  },
 };
 
 export const trainingCrud: CrudConfig<Record<string, unknown>> = {

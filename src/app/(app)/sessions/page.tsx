@@ -3,15 +3,24 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { requireActor } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { deriveSessionTitle, deriveYears } from '@/services/derive';
+import { canWrite } from '@/services/rbac';
+import { NewSessionButton } from './new-session-button';
 
 export const metadata: Metadata = { title: 'Sessions de formation' };
 
 export default async function SessionsPage() {
-  await requireActor();
+  const actor = await requireActor();
 
   const sessions = await prisma.trainingSession.findMany({
     where: { disabled: false },
@@ -31,11 +40,14 @@ export default async function SessionsPage() {
 
   return (
     <main className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sessions de formation</h1>
-        <p className="text-muted-foreground">
-          Ouvrez l’espace de travail d’une session pour inscrire, noter et délibérer.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Sessions de formation</h1>
+          <p className="text-muted-foreground">
+            Ouvrez l’espace de travail d’une session pour inscrire, noter et délibérer.
+          </p>
+        </div>
+        <NewSessionButton canWrite={canWrite(actor, 'TrainingSession')} />
       </div>
 
       <Card>
@@ -48,7 +60,7 @@ export default async function SessionsPage() {
         <CardContent>
           {sessions.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              Aucune session. Créez-en une via <code>POST /api/sessions</code>.
+              Aucune session pour l’instant. Utilisez « Nouvelle session ».
             </p>
           ) : (
             <Table>

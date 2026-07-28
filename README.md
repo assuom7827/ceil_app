@@ -8,11 +8,11 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 6 terminées.** L'espace de travail Session —
-> l'écran principal — est opérationnel : inscription en une étape, grilles
-> éditables avec collage Excel, imports, organisation des groupes par niveau.
-> 169 tests unitaires et d'intégration, 14 tests e2e. Restent le CRUD des
-> référentiels (7), les documents imprimables (8) et la documentation (10).
+> **État actuel : étapes 1 à 7 terminées.** L'application est fonctionnelle de
+> bout en bout : référentiels, catalogue, participants, sessions, espace de
+> travail avec grilles éditables, imports et organisation des groupes.
+> 173 tests unitaires et d'intégration, 21 tests e2e. Restent les documents
+> imprimables (8) et la documentation finale (10).
 
 ---
 
@@ -279,6 +279,25 @@ Une forme unique, produite par un wrapper unique : `{ error, message, details? }
 
 Les erreurs Prisma sont traduites plutôt que remontées brutes : `P2002` devient
 un 409 lisible, `P2025` un 404, `P2003` un 409 explicite sur la référence.
+
+## Écrans
+
+| Route                      | Contenu                                                                     |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `/`                        | Tableau de bord : KPIs et sessions récentes, admis **calculés**             |
+| `/sessions`                | Liste des sessions, création, accès à l'espace de travail                   |
+| `/sessions/[id]/workspace` | **Écran principal** (voir ci-dessous)                                       |
+| `/participants`            | Participants, faculté et catégories (M2N)                                   |
+| `/trainings`               | Formations et leurs niveaux CECRL (M2N)                                     |
+| `/positioning-tests`       | Tests de positionnement                                                     |
+| `/payments`                | Reçus, avec cycle brouillon → confirmé                                      |
+| `/references`              | Facultés, spécialités, enseignants, catégories, niveaux, modèles de diplôme |
+| `/users`                   | Comptes — **ADMIN uniquement**                                              |
+
+Les écrans CRUD partagent un composant unique piloté par une description de
+champs : les décrire treize fois inviterait treize divergences. La validation
+reste celle du serveur — les erreurs `{ path, message }` sont replacées sous
+leur champ, sans réécrire les règles Zod côté client.
 
 ## Espace de travail Session
 

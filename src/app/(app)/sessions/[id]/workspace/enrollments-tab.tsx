@@ -185,10 +185,11 @@ export function EnrollmentsTab({
     if (selected.size === 0) return;
 
     await run(async () => {
-      const result = await apiPost<{ updated: number }>(
-        `/api/sessions/${sessionId}/assign-group`,
-        { enrollmentIds: [...selected], groupType, groupId: groupId || null },
-      );
+      const result = await apiPost<{ updated: number }>(`/api/sessions/${sessionId}/assign-group`, {
+        enrollmentIds: [...selected],
+        groupType,
+        groupId: groupId || null,
+      });
       await load();
       return `${result.updated} inscription(s) affectée(s).`;
     });

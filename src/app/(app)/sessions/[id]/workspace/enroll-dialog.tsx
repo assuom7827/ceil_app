@@ -101,18 +101,19 @@ export function EnrollDialog({
 
   async function submit() {
     const ok = await run(async () => {
-      const result = await apiPost<{ created: number; skipped: number; participantsCreated: number }>(
-        `/api/sessions/${sessionId}/enroll`,
-        {
-          participantIds: [...selected.keys()],
-          newParticipants: usableDrafts.map((draft) => ({
-            familyName: draft.familyName.trim() || null,
-            firstName: draft.firstName.trim() || null,
-            type: draft.type,
-            phone: draft.phone.trim() || null,
-          })),
-        },
-      );
+      const result = await apiPost<{
+        created: number;
+        skipped: number;
+        participantsCreated: number;
+      }>(`/api/sessions/${sessionId}/enroll`, {
+        participantIds: [...selected.keys()],
+        newParticipants: usableDrafts.map((draft) => ({
+          familyName: draft.familyName.trim() || null,
+          firstName: draft.firstName.trim() || null,
+          type: draft.type,
+          phone: draft.phone.trim() || null,
+        })),
+      });
 
       const parts = [`${result.created} inscription(s) créée(s)`];
       if (result.participantsCreated > 0) {
@@ -148,8 +149,8 @@ export function EnrollDialog({
         <DialogHeader>
           <DialogTitle>Inscrire des participants</DialogTitle>
           <DialogDescription>
-            Sélectionnez des participants existants, créez-en à la volée, ou les deux — le tout
-            part en une seule opération.
+            Sélectionnez des participants existants, créez-en à la volée, ou les deux — le tout part
+            en une seule opération.
           </DialogDescription>
         </DialogHeader>
 

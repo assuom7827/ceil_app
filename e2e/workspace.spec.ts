@@ -29,7 +29,13 @@ test.describe('espace de travail de session', () => {
 
   test('affiche le titre dérivé et les cinq onglets', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Anglais');
-    for (const tab of ['Inscrits', 'Positionnement', 'Notes / Délibération', 'Groupes', 'Documents']) {
+    for (const tab of [
+      'Inscrits',
+      'Positionnement',
+      'Notes / Délibération',
+      'Groupes',
+      'Documents',
+    ]) {
       await expect(page.getByRole('tab', { name: tab })).toBeVisible();
     }
     await expect(page.getByTestId('session-state')).toHaveText('Ouverte');
@@ -106,7 +112,9 @@ test.describe('espace de travail de session', () => {
 
   test('organise les groupes par niveau depuis l’onglet Groupes', async ({ page }) => {
     await page.getByRole('tab', { name: 'Groupes' }).click();
-    await expect(page.getByRole('heading', { name: /Groupes de session, par niveau/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Groupes de session, par niveau/ }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Ouvrir les groupes' }).click();
     await expect(page.getByTestId('feedback-success')).toBeVisible();
   });

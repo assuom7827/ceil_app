@@ -46,6 +46,12 @@ export interface CrudConfig<TInput> {
   toUpdateData?: (input: TInput) => Record<string, unknown>;
   /** L'entité porte-t-elle un champ `disabled` ? */
   softDisable?: boolean;
+  /**
+   * Invariant à rétablir après écriture (ex. « un seul défaut actif »).
+   * Reçoit l'enregistrement produit et renvoie sa version définitive, afin que
+   * la réponse ne présente jamais un état déjà corrigé en base.
+   */
+  afterWrite?: (db: HandlerContext<unknown>['db'], record: unknown) => Promise<unknown>;
 }
 
 function dataFrom<TInput>(
@@ -84,7 +90,8 @@ export function collectionRoutes<TInput>(config: CrudConfig<TInput>) {
     const created = await config
       .delegate(db)
       .create({ data: dataFrom(input, config.toCreateData) });
-    return NextResponse.json(created, { status: 201 });
+    const settled = config.afterWrite ? await config.afterWrite(db, created) : created;
+    return NextResponse.json(settled, { status: 201 });
   });
 
   return { GET, POST };
@@ -109,11 +116,12 @@ export function itemRoutes<TInput>(config: CrudConfig<TInput>) {
     async ({ db, params, request }) => {
       const schema = config.updateSchema ?? config.schema;
       const input = await readJson(request, schema);
-      return config.delegate(db).update({
+      const updated = await config.delegate(db).update({
         where: { id: params.id },
         data: dataFrom(input, config.toUpdateData ?? config.toCreateData),
         ...(config.include ? { include: config.include } : {}),
       });
+      return config.afterWrite ? config.afterWrite(db, updated) : updated;
     },
   );
 

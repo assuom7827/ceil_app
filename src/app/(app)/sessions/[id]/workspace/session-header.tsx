@@ -77,7 +77,11 @@ export function SessionHeader({
         </div>
 
         {permissions.session ? (
-          <Button variant={locked ? 'outline' : 'destructive'} onClick={toggleLock} disabled={pending}>
+          <Button
+            variant={locked ? 'outline' : 'destructive'}
+            onClick={toggleLock}
+            disabled={pending}
+          >
             {pending ? <Spinner /> : locked ? <LockOpen /> : <Lock />}
             {locked ? 'Déverrouiller' : 'Verrouiller'}
           </Button>
@@ -119,7 +123,15 @@ export function SessionHeader({
   );
 }
 
-function Counter({ label, value, muted }: { label: string; value: number | null; muted?: boolean }) {
+function Counter({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: number | null;
+  muted?: boolean;
+}) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground">{label}</p>

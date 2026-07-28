@@ -70,11 +70,7 @@ export function Workspace({
         </TabsContent>
 
         <TabsContent value="positioning">
-          <PositioningTab
-            sessionId={session.id}
-            canWrite={permissions.scores}
-            locked={locked}
-          />
+          <PositioningTab sessionId={session.id} canWrite={permissions.scores} locked={locked} />
         </TabsContent>
 
         <TabsContent value="deliberation">

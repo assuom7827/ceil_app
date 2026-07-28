@@ -150,10 +150,7 @@ describe.skipIf(!hasDb)('API — comptes', () => {
     });
     signIn('ADMIN', admin.id);
 
-    const response = await deleteUser(
-      request('', { method: 'DELETE' }),
-      params({ id: admin.id }),
-    );
+    const response = await deleteUser(request('', { method: 'DELETE' }), params({ id: admin.id }));
     expect(response.status).toBe(409);
   });
 
