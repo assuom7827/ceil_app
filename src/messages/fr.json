@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "CEIL",
+    "fullName": "Centre d'Enseignement Intensif des Langues",
+    "university": "Université Abdelhamid Ibn Badis — Mostaganem"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "sessions": "Sessions de formation",
+    "participants": "Participants",
+    "positioningTests": "Tests de positionnement",
+    "trainings": "Formations",
+    "groups": "Groupes",
+    "payments": "Paiements",
+    "settings": "Paramètres",
+    "references": "Référentiels"
+  },
+  "common": {
+    "search": "Rechercher",
+    "create": "Créer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "saveAll": "Enregistrer tout",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "loading": "Chargement…",
+    "noData": "Aucune donnée",
+    "actions": "Actions",
+    "import": "Importer",
+    "export": "Exporter",
+    "print": "Imprimer",
+    "language": "Langue",
+    "logout": "Déconnexion",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "session": {
+    "workspace": "Espace de travail",
+    "threshold": "Seuil d'admission",
+    "state": { "open": "Ouverte", "locked": "Verrouillée" },
+    "lock": "Verrouiller",
+    "unlock": "Déverrouiller",
+    "tabs": {
+      "enrollments": "Inscrits",
+      "positioning": "Positionnement",
+      "deliberation": "Notes / Délibération",
+      "groups": "Groupes",
+      "documents": "Documents"
+    }
+  },
+  "enrollment": {
+    "enroll": "Inscrire des participants",
+    "kind": { "new": "Nouveau", "returning": "Ancien" }
+  },
+  "scores": {
+    "oralExpression": "Expression orale",
+    "writtenExpression": "Expression écrite",
+    "oralComprehension": "Compréhension orale",
+    "writtenComprehension": "Compréhension écrite",
+    "total": "Total",
+    "status": "Statut",
+    "admitted": "Admis",
+    "refused": "Ajourné"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue.",
+    "validation": "Les données saisies sont invalides.",
+    "unauthorized": "Vous devez être connecté.",
+    "forbidden": "Action non autorisée pour votre rôle.",
+    "notFound": "Élément introuvable.",
+    "locked": "Élément verrouillé : modification impossible."
+  }
+}

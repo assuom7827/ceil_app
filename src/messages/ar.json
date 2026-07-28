@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "مركز التعليم المكثف للغات",
+    "fullName": "مركز التعليم المكثف للغات",
+    "university": "جامعة عبد الحميد بن باديس — مستغانم"
+  },
+  "nav": {
+    "dashboard": "لوحة القيادة",
+    "sessions": "الدورات التكوينية",
+    "participants": "المشاركون",
+    "positioningTests": "اختبارات تحديد المستوى",
+    "trainings": "التكوينات",
+    "groups": "الأفواج",
+    "payments": "المدفوعات",
+    "settings": "الإعدادات",
+    "references": "المراجع"
+  },
+  "common": {
+    "search": "بحث",
+    "create": "إنشاء",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "saveAll": "حفظ الكل",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "loading": "جارٍ التحميل…",
+    "noData": "لا توجد بيانات",
+    "actions": "إجراءات",
+    "import": "استيراد",
+    "export": "تصدير",
+    "print": "طباعة",
+    "language": "اللغة",
+    "logout": "تسجيل الخروج",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "session": {
+    "workspace": "مساحة العمل",
+    "threshold": "عتبة النجاح",
+    "state": { "open": "مفتوحة", "locked": "مقفلة" },
+    "lock": "قفل",
+    "unlock": "فتح",
+    "tabs": {
+      "enrollments": "المسجلون",
+      "positioning": "تحديد المستوى",
+      "deliberation": "النقاط / المداولة",
+      "groups": "الأفواج",
+      "documents": "الوثائق"
+    }
+  },
+  "enrollment": {
+    "enroll": "تسجيل المشاركين",
+    "kind": { "new": "جديد", "returning": "قديم" }
+  },
+  "scores": {
+    "oralExpression": "التعبير الشفوي",
+    "writtenExpression": "التعبير الكتابي",
+    "oralComprehension": "الفهم الشفوي",
+    "writtenComprehension": "الفهم الكتابي",
+    "total": "المجموع",
+    "status": "الحالة",
+    "admitted": "ناجح",
+    "refused": "مؤجل"
+  },
+  "errors": {
+    "generic": "حدث خطأ.",
+    "validation": "البيانات المُدخلة غير صالحة.",
+    "unauthorized": "يجب تسجيل الدخول.",
+    "forbidden": "إجراء غير مسموح به لدوركم.",
+    "notFound": "العنصر غير موجود.",
+    "locked": "العنصر مقفل: التعديل غير ممكن."
+  }
+}

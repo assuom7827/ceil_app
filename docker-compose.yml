@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ceil-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ceil
+      POSTGRES_PASSWORD: ceil
+      POSTGRES_DB: ceil
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ceil -d ceil']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:latest
+    container_name: ceil-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+volumes:
+  pgdata:
