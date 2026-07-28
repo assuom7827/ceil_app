@@ -8,10 +8,10 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 8 terminées.** Le cycle métier est couvert de
-> l'inscription aux documents officiels. 184 tests unitaires et d'intégration,
-> 26 tests e2e. Restent le parcours e2e complet (9) et la documentation
-> finale (10).
+> **État actuel : étapes 1 à 9 terminées.** Le cycle métier est couvert de
+> l'inscription aux documents officiels, et vérifié de bout en bout dans un vrai
+> navigateur. 184 tests unitaires et d'intégration, 39 tests e2e. Reste la
+> documentation finale (10).
 
 ---
 
@@ -424,6 +424,19 @@ zéro entre chaque cas.
 ```bash
 npm run test:e2e
 ```
+
+39 tests dans un vrai navigateur, dont un **parcours métier complet** en 13
+étapes enchaînées sur une même session (`e2e/journey.spec.ts`) :
+
+création de session → inscription en une étape → import CSV → positionnement →
+attribution des niveaux → ouverture des groupes par niveau → répartition →
+saisie des notes → admission → diplôme → procès-verbal → verrouillage →
+déverrouillage.
+
+Ces tests s'exécutent **en série** (`mode: 'serial'`) : c'est la continuité du
+cycle qui est éprouvée, pas des gestes isolés. Le verrouillage est vérifié aux
+deux niveaux — grilles figées à l'écran, **et** requête forgée refusée par
+l'API en 409.
 
 Playwright démarre le serveur de développement lui-même. Sur une machine
 disposant déjà d'un Chromium (CI, image Docker), évitez le téléchargement avec :
