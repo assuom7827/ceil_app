@@ -175,6 +175,7 @@ model TrainingLevel {
 
   sessions    TrainingSession[]
   enrollments Enrollment[]      @relation("AssignedLevel")
+  groups      StudentGroup[]    @relation("GroupLevel")
 
   @@index([sequence])
   @@index([disabled])
@@ -348,10 +349,21 @@ model StudentGroup {
   teacherId String?
   teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 
+  /// Niveau visé par le groupe.
+  ///
+  /// Une session est multi-niveaux : « Anglais 2026-2027 » accueille des A1,
+  /// des B1… et chaque groupe cible UN niveau. Un même couple (session, niveau)
+  /// peut compter plusieurs groupes — Groupe 1 à 5 — selon l'effectif et la
+  /// capacité des salles. Reste `null` pour les gabarits et les groupes
+  /// d'examen, qui sont indifférents au niveau.
+  trainingLevelId String?
+  trainingLevel   TrainingLevel? @relation("GroupLevel", fields: [trainingLevelId], references: [id], onDelete: SetNull)
+
   sessionEnrollments Enrollment[] @relation("SessionGroup")
   examEnrollments    Enrollment[] @relation("ExamGroup")
 
   @@index([trainingSessionId, groupType])
+  @@index([trainingSessionId, trainingLevelId, sequence])
   @@index([isTemplate, groupType, sequence])
   @@index([disabled])
   @@map("student_groups")

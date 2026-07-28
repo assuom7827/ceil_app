@@ -188,6 +188,33 @@ matricules sous concurrence.
 - **Barème CECRL du seed** : 11 niveaux contigus sur 0..100, le total du
   positionnement étant la somme de deux notes écrites supposées sur 50.
 
+## Organisation des groupes
+
+Une session est **multi-niveaux** : « Anglais 2026-2027 » accueille des A1, des
+B1… et chaque groupe cible **un** niveau. Un même couple (session, niveau) peut
+compter plusieurs groupes — Groupe 1 à 5 — selon l'effectif et la capacité des
+salles.
+
+L'enchaînement est donc :
+
+1. **Inscription** des participants à la session.
+2. **Test de positionnement** → `resolveLevels()` écrit le niveau de chacun dans
+   `Enrollment.assignedLevel`.
+3. **`organizeGroupsByLevel(session)`** ouvre, niveau par niveau,
+   `plafond(effectif ÷ capacité)` groupes. 60 A1 avec des salles de 25 donnent
+   3 groupes ; 10 B2 en donnent 1.
+4. **`assignGroupsByLevel(session)`** range chaque inscrit dans un groupe de
+   **son** niveau, sans dépasser les capacités.
+
+Les groupes d'**examen** suivent une logique distincte : ils ignorent le niveau
+et se remplissent par ordre alphabétique (`organizeGroups` + `assignExamGroups`),
+ce qui donne des listes d'émargement exploitables en salle.
+
+Deux garde-fous : la répartition **complète** les groupes existants au lieu de
+tout rebrasser (relancer après l'arrivée de nouveaux inscrits est sans danger),
+et les inscrits sans niveau attribué sont **comptés à part** (`withoutLevel`)
+plutôt que placés au hasard — signe que le positionnement reste à faire.
+
 ## Tests
 
 ```bash
