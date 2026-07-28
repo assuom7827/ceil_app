@@ -247,6 +247,44 @@ async function seedUsers() {
   }
 }
 
+const DEMO_SESSION_CODE = 'DEMO-ANG-2526';
+const DEMO_TEST_TITLE = 'Test de positionnement — Anglais 2025-2026';
+
+/**
+ * Session de démonstration : sans elle, l'espace de travail — écran principal
+ * de l'application — n'aurait rien à afficher au premier lancement.
+ */
+async function seedDemoSession() {
+  const training = await prisma.training.findUnique({ where: { frName: 'Anglais' } });
+  if (!training) return;
+
+  const session = await prisma.trainingSession.upsert({
+    where: { code: DEMO_SESSION_CODE },
+    update: {},
+    create: {
+      code: DEMO_SESSION_CODE,
+      trainingId: training.id,
+      academicYear: '2025-2026',
+      dateFrom: new Date('2025-10-01'),
+      dateTo: new Date('2026-06-30'),
+      admissionThreshold: 50,
+      matriculePrefix: 'CEIL-ANG-2526',
+    },
+  });
+
+  const existingTest = await prisma.positioningTest.findFirst({
+    where: { title: DEMO_TEST_TITLE },
+  });
+  if (!existingTest) {
+    await prisma.positioningTest.create({
+      data: { title: DEMO_TEST_TITLE, trainingId: training.id, date: new Date('2025-09-20') },
+    });
+  }
+
+  console.log(`  ✓ session de démonstration « ${DEMO_SESSION_CODE} » + test de positionnement`);
+  return session;
+}
+
 async function main() {
   console.log('Seed CEIL —');
   await seedTrainingLevels();
@@ -255,6 +293,7 @@ async function main() {
   await seedReferentials();
   await seedGroupTemplates();
   await seedUsers();
+  await seedDemoSession();
   console.log('Seed terminé.');
 }
 
