@@ -19,10 +19,7 @@ export default async function DiplomasPage({
 
   return (
     <>
-      <PrintToolbar
-        title="Diplômes"
-        subtitle={`${header.sessionTitle} — ${people.length} admis`}
-      />
+      <PrintToolbar title="Diplômes" subtitle={`${header.sessionTitle} — ${people.length} admis`} />
       {people.length === 0 ? (
         <p className="print-sheet flex items-center justify-center text-center text-sm">
           Aucun admis dans cette session : aucun diplôme à imprimer.

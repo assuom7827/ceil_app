@@ -10,23 +10,49 @@ async function login(page: Page) {
   await expect(page).toHaveURL('/');
 }
 
-async function firstSessionId(page: Page): Promise<string> {
-  await page.goto('/sessions');
-  const href = await page.getByRole('link', { name: 'Espace de travail' }).first().getAttribute('href');
-  const id = href?.split('/')[2];
-  expect(id).toBeTruthy();
-  return id as string;
+/**
+ * Session créée pour ces tests, avec une date de fin connue : les documents
+ * portent le mois de fin en arabe, on ne peut donc pas dépendre d'une session
+ * résiduelle dont les dates seraient absentes.
+ */
+async function documentSession(page: Page): Promise<string> {
+  const trainings = (await (await page.request.get('/api/trainings?q=Anglais')).json()) as {
+    data: Array<{ id: string }>;
+  };
+
+  const session = (await (
+    await page.request.post('/api/sessions', {
+      data: {
+        trainingId: trainings.data[0]!.id,
+        academicYear: '2025-2026',
+        dateFrom: '2025-10-01',
+        dateTo: '2026-06-30', // juin → « جوان »
+        admissionThreshold: 50,
+        matriculePrefix: `DOC-${Date.now().toString().slice(-6)}`,
+      },
+    })
+  ).json()) as { id: string };
+
+  await page.request.post(`/api/sessions/${session.id}/enroll`, {
+    data: {
+      participantIds: [],
+      newParticipants: [{ familyName: 'DOCUMENT', firstName: 'Test' }],
+    },
+  });
+
+  return session.id;
 }
 
 test.describe('documents imprimables', () => {
   test('le procès-verbal affiche le tableau et le mois arabe', async ({ page }) => {
     await login(page);
-    const sessionId = await firstSessionId(page);
+    const sessionId = await documentSession(page);
     await page.goto(`/print/sessions/${sessionId}/minutes`);
 
-    await expect(page.getByRole('heading', { name: 'محضر المداولة' })).toBeVisible();
+    // Le PV se pagine : un titre par feuille dès que la session dépasse une page.
+    await expect(page.getByRole('heading', { name: 'محضر المداولة' }).first()).toBeVisible();
     await expect(page.getByText('Procès-verbal de délibération').first()).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Décision' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Décision' }).first()).toBeVisible();
 
     // Le mois de fin de session (juin 2026) doit apparaître en arabe algérien.
     await expect(page.getByText(/جوان/).first()).toBeVisible();
@@ -34,7 +60,7 @@ test.describe('documents imprimables', () => {
 
   test('les blocs arabes sont rendus en sens de lecture inversé', async ({ page }) => {
     await login(page);
-    const sessionId = await firstSessionId(page);
+    const sessionId = await documentSession(page);
     await page.goto(`/print/sessions/${sessionId}/minutes`);
 
     const rtl = page.locator('.rtl-block').first();
@@ -43,17 +69,17 @@ test.describe('documents imprimables', () => {
 
   test('la liste des participants prévoit une colonne d’émargement', async ({ page }) => {
     await login(page);
-    const sessionId = await firstSessionId(page);
+    const sessionId = await documentSession(page);
     await page.goto(`/print/sessions/${sessionId}/list`);
 
-    await expect(page.getByRole('heading', { name: 'قائمة المشاركين' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Émargement' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'الاسم واللقب' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'قائمة المشاركين' }).first()).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Émargement' }).first()).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'الاسم واللقب' }).first()).toBeVisible();
   });
 
   test('les attestations sont accessibles depuis l’onglet Documents', async ({ page }) => {
     await login(page);
-    const sessionId = await firstSessionId(page);
+    const sessionId = await documentSession(page);
     await page.goto(`/sessions/${sessionId}/workspace`);
     await page.getByRole('tab', { name: 'Documents' }).click();
 

@@ -13,9 +13,7 @@ export function PrintToolbar({ title, subtitle }: { title: string; subtitle?: st
       <div className="mx-auto flex max-w-[210mm] flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-semibold">{title}</p>
-          {subtitle ? (
-            <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
-          ) : null}
+          {subtitle ? <p className="truncate text-sm text-muted-foreground">{subtitle}</p> : null}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => window.close()}>

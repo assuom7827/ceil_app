@@ -67,8 +67,7 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
       label: 'Attestations d’inscription',
       description: 'Une attestation par inscrit, admis ou non.',
       icon: <FileText className="size-4" />,
-      blocked:
-        admission && admission.total === 0 ? 'Aucun inscrit dans cette session.' : undefined,
+      blocked: admission && admission.total === 0 ? 'Aucun inscrit dans cette session.' : undefined,
     },
   ];
 

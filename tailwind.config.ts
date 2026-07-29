@@ -50,6 +50,11 @@ const config: Config = {
           foreground: 'hsl(var(--success-foreground))',
         },
       },
+      boxShadow: {
+        // Ombre douce mais lisible, pour détacher les cartes du fond gris.
+        card: '0 1px 2px 0 rgb(16 24 40 / 0.05), 0 1px 3px 0 rgb(16 24 40 / 0.10)',
+        'card-hover': '0 2px 4px -1px rgb(16 24 40 / 0.08), 0 4px 8px -2px rgb(16 24 40 / 0.10)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
