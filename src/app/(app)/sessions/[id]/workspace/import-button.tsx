@@ -10,6 +10,7 @@ export interface ImportReport {
   rows?: number;
   participantsCreated?: number;
   participantsMatched?: number;
+  participantsCompleted?: number;
   enrolled?: number;
   skipped?: number;
   updated?: number;
@@ -62,6 +63,8 @@ export function ImportButton({
   if (report) {
     if (report.participantsCreated) summary.push(`${report.participantsCreated} créé(s)`);
     if (report.participantsMatched) summary.push(`${report.participantsMatched} rapproché(s)`);
+    if (report.participantsCompleted)
+      summary.push(`${report.participantsCompleted} fiche(s) complétée(s)`);
     if (report.enrolled !== undefined) summary.push(`${report.enrolled} inscrit(s)`);
     if (report.updated !== undefined) summary.push(`${report.updated} note(s) mise(s) à jour`);
     if (report.skipped) summary.push(`${report.skipped} ignoré(s)`);

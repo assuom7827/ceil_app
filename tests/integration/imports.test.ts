@@ -162,6 +162,68 @@ describe.skipIf(!hasDb)('import d’inscriptions', () => {
     });
   });
 
+  it('importe l’état civil des participants créés', async () => {
+    const { training } = await createTraining();
+    const session = await createSession(training.id);
+
+    const rows = parseTabular(
+      buildWorkbook([
+        {
+          Nom: 'BENALI',
+          Prénom: 'Amina',
+          'Date de naissance': '28/07/1998',
+          'Lieu de naissance': 'Mostaganem',
+        },
+        { Nom: 'ZEROUAL', Prénom: 'Karim', 'Date de naissance': 'vers 1975' },
+      ]),
+    );
+
+    expect(await importEnrollments(prisma, session.id, rows)).toMatchObject({
+      participantsCreated: 2,
+      issues: [],
+    });
+
+    const amina = await prisma.participant.findFirstOrThrow({ where: { familyName: 'BENALI' } });
+    expect(amina.birthDate?.toISOString().slice(0, 10)).toBe('1998-07-28');
+    expect(amina.birthPlace).toBe('Mostaganem');
+    expect(amina.birthDateIsApproximate).toBe(false);
+
+    const karim = await prisma.participant.findFirstOrThrow({ where: { familyName: 'ZEROUAL' } });
+    expect(karim.birthDate).toBeNull();
+    expect(karim.approximateBirth).toBe('vers 1975');
+    expect(karim.birthDateIsApproximate).toBe(true);
+  });
+
+  it('complète une fiche existante sans écraser ce qui est déjà saisi', async () => {
+    const { training } = await createTraining();
+    const session = await createSession(training.id);
+    const [existing] = await createParticipants(1);
+    await prisma.participant.update({
+      where: { id: existing!.id },
+      data: { birthPlace: 'Oran' },
+    });
+
+    const rows = parseTabular(
+      buildWorkbook([
+        {
+          Matricule: existing!.registrationNumber,
+          'Date de naissance': '28/07/1998',
+          'Lieu de naissance': 'Mostaganem',
+        },
+      ]),
+    );
+    const report = await importEnrollments(prisma, session.id, rows);
+
+    expect(report).toMatchObject({ participantsMatched: 1, participantsCompleted: 1 });
+    // La divergence est dite, pas résolue en silence.
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.message).toContain('lieu de naissance');
+
+    const updated = await prisma.participant.findUniqueOrThrow({ where: { id: existing!.id } });
+    expect(updated.birthDate?.toISOString().slice(0, 10)).toBe('1998-07-28');
+    expect(updated.birthPlace).toBe('Oran');
+  });
+
   it('ne crée aucun participant si la session est verrouillée (409)', async () => {
     const { training } = await createTraining();
     const session = await createSession(training.id);

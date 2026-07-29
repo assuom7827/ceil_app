@@ -32,6 +32,10 @@ export function normalizeHeader(header: string): string {
       .normalize('NFD')
       // Diacritiques latins (U+0300–U+036F) et arabes (U+064B–U+065F, U+0670).
       .replace(/[̀-ًͯ-ٰٟ]/g, '')
+      // « N° » est l'abréviation courante de « numéro » : en rendant le signe
+      // degré, on retombe sur l'alias « no ». Un « N » seul — souvent un simple
+      // numéro de ligne — reste volontairement non reconnu.
+      .replace(/°/g, 'o')
       .toLowerCase()
       .replace(/[^a-z0-9؀-ۿ]+/g, ' ')
       .trim()
@@ -77,6 +81,22 @@ export function pick(row: RawRow, aliases: readonly string[]): string | null {
   return null;
 }
 
+/**
+ * Comme `pick`, mais rend la valeur BRUTE de la cellule.
+ *
+ * Une date lue depuis un classeur peut arriver en objet `Date` ou en numéro de
+ * série Excel : la convertir en texte trop tôt perdrait cette information.
+ */
+export function pickRaw(row: RawRow, aliases: readonly string[]): unknown {
+  for (const alias of aliases) {
+    const value = row[alias];
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string' && value.trim().length === 0) continue;
+    return value;
+  }
+  return null;
+}
+
 /** Vrai si aucune cellule de la ligne ne porte de valeur. */
 export function isBlankRow(row: RawRow): boolean {
   return Object.values(row).every(
@@ -97,6 +117,31 @@ export const COLUMNS = {
   arabName: ['nom arabe', 'اللقب بالعربية', 'nom ar'],
   arabFirstName: ['prenom arabe', 'الاسم بالعربية', 'prenom ar'],
   type: ['type', 'categorie', 'الصفة'],
+  // « Né(e) le » se normalise en « ne e le » ; « Né le » en « ne le ».
+  birthDate: [
+    'date de naissance',
+    'date naissance',
+    'naissance',
+    'ne le',
+    'nee le',
+    'ne e le',
+    'date of birth',
+    'birth date',
+    'تاريخ الميلاد',
+    'تاريخ الازدياد',
+  ],
+  birthPlace: [
+    'lieu de naissance',
+    'lieu naissance',
+    'ne a',
+    'nee a',
+    'ne e a',
+    'birth place',
+    'place of birth',
+    'مكان الميلاد',
+    'مكان الازدياد',
+  ],
+  arabBirthPlace: ['lieu de naissance arabe', 'lieu naissance arabe', 'مكان الميلاد بالعربية'],
   phone: ['telephone', 'tel', 'phone', 'الهاتف'],
   email: ['email', 'mail', 'courriel'],
   registrationNumber: ['matricule', 'numero', 'no', 'registration number', 'رقم التسجيل'],
@@ -112,6 +157,126 @@ export function parseParticipantType(value: string | null): ParticipantTypeLike 
   const normalized = normalizeHeader(value);
   const teacherWords = ['teacher', 'enseignant', 'ens', 'prof', 'professeur', 'استاذ'];
   return teacherWords.includes(normalized) ? 'TEACHER' : 'STUDENT';
+}
+
+// ---------------------------------------------------------------------------
+// Dates de naissance
+// ---------------------------------------------------------------------------
+
+/**
+ * Lecture d'une date de naissance.
+ *
+ * `approximate` couvre le cas fréquent des états civils anciens : « vers 1975 »
+ * ou une année seule. Plutôt que d'inventer un 1er janvier, on conserve la
+ * mention telle quelle — c'est ce que le modèle appelle `approximateBirth`.
+ */
+export type ParsedBirthDate =
+  | { kind: 'empty' }
+  | { kind: 'date'; date: Date }
+  | { kind: 'approximate'; text: string }
+  | { kind: 'invalid'; text: string };
+
+/** Origine du calendrier Excel : le sérial 1 vaut le 1er janvier 1900. */
+const EXCEL_EPOCH_UTC = Date.UTC(1899, 11, 30);
+const DAY_MS = 86_400_000;
+/** En deçà, une date de naissance relève de la faute de frappe. */
+const EARLIEST_BIRTH_YEAR = 1900;
+/**
+ * Au-delà, un nombre ne peut plus être une année : c'est un sérial Excel.
+ * Le sérial 10000 tombe en 1927, donc aucune année plausible ne l'atteint.
+ */
+const SERIAL_FLOOR = 10_000;
+
+const APPROXIMATE_PREFIX = /^(?:vers|environ|env\.?|circa|ca\.?|~|حوالي|نحو)\s*\S/i;
+
+function isPlausibleYear(year: number, today: Date): boolean {
+  return Number.isInteger(year) && year >= EARLIEST_BIRTH_YEAR && year <= today.getFullYear();
+}
+
+/** Construit une date UTC en refusant les jours qui n'existent pas (31/02). */
+function buildDate(year: number, month: number, day: number, today: Date): ParsedBirthDate | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1) return null;
+  if (date.getUTCDate() !== day) return null;
+  if (!isPlausibleYear(year, today) || date.getTime() > today.getTime()) return null;
+  return { kind: 'date', date };
+}
+
+/**
+ * Année sur deux chiffres : on retient la plus récente qui ne soit pas dans le
+ * futur. En 2026, « 98 » donne 1998 et « 05 » donne 2005.
+ */
+function expandYear(value: number, today: Date): number {
+  if (value >= 100) return value;
+  const recent = 2000 + value;
+  return recent > today.getFullYear() ? 1900 + value : recent;
+}
+
+/**
+ * Lit une date de naissance venue d'un tableur.
+ *
+ * Formats acceptés : cellule date Excel, sérial Excel, `JJ/MM/AAAA` (séparateurs
+ * `/ . -`), `AAAA-MM-JJ`, année seule, mention approximative. Le jour vient en
+ * premier — convention française ; un fichier américain reste correctement lu
+ * dès que le second nombre dépasse 12 (`7/28/1998`), car il ne peut être un mois.
+ */
+export function parseBirthDate(value: unknown, now: Date = new Date()): ParsedBirthDate {
+  if (value === null || value === undefined) return { kind: 'empty' };
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return { kind: 'invalid', text: String(value) };
+    return (
+      buildDate(value.getUTCFullYear(), value.getUTCMonth() + 1, value.getUTCDate(), now) ?? {
+        kind: 'invalid',
+        text: value.toISOString().slice(0, 10),
+      }
+    );
+  }
+
+  if (typeof value === 'number') return fromNumber(value, String(value), now);
+
+  const text = String(value).trim();
+  if (text.length === 0) return { kind: 'empty' };
+
+  // « vers 1975 », « حوالي 1975 » : mention conservée mot pour mot.
+  if (APPROXIMATE_PREFIX.test(text)) return { kind: 'approximate', text };
+
+  if (/^\d+$/.test(text)) return fromNumber(Number(text), text, now);
+
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$/.exec(text);
+  if (iso) {
+    return (
+      buildDate(Number(iso[1]), Number(iso[2]), Number(iso[3]), now) ?? { kind: 'invalid', text }
+    );
+  }
+
+  const parts = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})$/.exec(text);
+  if (parts) {
+    const first = Number(parts[1]);
+    const second = Number(parts[2]);
+    const year = expandYear(Number(parts[3]), now);
+    // Un second nombre supérieur à 12 ne peut pas être un mois : le fichier est
+    // au format mois/jour/année.
+    const [day, month] = second > 12 ? [second, first] : [first, second];
+    return buildDate(year, month, day, now) ?? { kind: 'invalid', text };
+  }
+
+  return { kind: 'invalid', text };
+}
+
+function fromNumber(value: number, text: string, now: Date): ParsedBirthDate {
+  if (isPlausibleYear(value, now)) return { kind: 'approximate', text: String(value) };
+  if (value >= SERIAL_FLOOR) {
+    const date = new Date(EXCEL_EPOCH_UTC + Math.round(value) * DAY_MS);
+    return (
+      buildDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), now) ?? {
+        kind: 'invalid',
+        text,
+      }
+    );
+  }
+  return { kind: 'invalid', text };
 }
 
 export interface ImportIssue {
@@ -131,6 +296,11 @@ export interface ParsedEnrollmentRow {
   arabName: string | null;
   arabFirstName: string | null;
   type: ParticipantTypeLike;
+  birthDate: Date | null;
+  /** Mention en clair quand la date n'est pas exacte (« vers 1975 », « 1998 »). */
+  approximateBirth: string | null;
+  birthPlace: string | null;
+  arabBirthPlace: string | null;
   phone: string | null;
   email: string | null;
   registrationNumber: string | null;
@@ -163,6 +333,17 @@ export function parseEnrollmentRows(rows: RawRow[]): {
       return;
     }
 
+    // Une date illisible ne fait pas perdre la ligne : le participant compte
+    // plus que sa date de naissance, mais l'anomalie est signalée pour être
+    // corrigée dans le fichier.
+    const birth = parseBirthDate(pickRaw(row, COLUMNS.birthDate));
+    if (birth.kind === 'invalid') {
+      issues.push({
+        line,
+        message: `Date de naissance illisible : « ${birth.text} » (attendu JJ/MM/AAAA). Le reste de la ligne est conservé.`,
+      });
+    }
+
     parsed.push({
       line,
       familyName,
@@ -170,6 +351,10 @@ export function parseEnrollmentRows(rows: RawRow[]): {
       arabName,
       arabFirstName: pick(row, COLUMNS.arabFirstName),
       type: parseParticipantType(pick(row, COLUMNS.type)),
+      birthDate: birth.kind === 'date' ? birth.date : null,
+      approximateBirth: birth.kind === 'approximate' ? birth.text : null,
+      birthPlace: pick(row, COLUMNS.birthPlace),
+      arabBirthPlace: pick(row, COLUMNS.arabBirthPlace),
       phone: pick(row, COLUMNS.phone),
       email: pick(row, COLUMNS.email),
       registrationNumber,
@@ -184,10 +369,67 @@ export interface ImportEnrollmentsReport {
   rows: number;
   participantsCreated: number;
   participantsMatched: number;
+  /** Participants rapprochés dont une fiche incomplète a été complétée. */
+  participantsCompleted: number;
   enrolled: number;
   /** Déjà inscrits : ignorés sans erreur. */
   skipped: number;
   issues: ImportIssue[];
+}
+
+/** Champs d'état civil qu'un import peut renseigner sur une fiche existante. */
+const CIVIL_FIELDS = ['birthPlace', 'arabBirthPlace', 'approximateBirth'] as const;
+
+interface CivilStatus {
+  birthDate: Date | null;
+  approximateBirth: string | null;
+  birthPlace: string | null;
+  arabBirthPlace: string | null;
+}
+
+/** Deux dates désignent-elles le même jour ? */
+function sameDay(left: Date, right: Date): boolean {
+  return left.toISOString().slice(0, 10) === right.toISOString().slice(0, 10);
+}
+
+/**
+ * Ce que le fichier ajoute à une fiche existante.
+ *
+ * On ne complète que les champs VIDES. Une valeur déjà saisie n'est jamais
+ * écrasée : le fichier importé n'est pas plus fiable que la fiche, et une
+ * divergence mérite d'être arbitrée par un humain — elle est donc signalée.
+ */
+export function planCivilStatusUpdate(
+  existing: CivilStatus,
+  row: Pick<
+    ParsedEnrollmentRow,
+    'birthDate' | 'approximateBirth' | 'birthPlace' | 'arabBirthPlace'
+  >,
+): { data: Partial<CivilStatus> & { birthDateIsApproximate?: boolean }; conflicts: string[] } {
+  const data: Partial<CivilStatus> & { birthDateIsApproximate?: boolean } = {};
+  const conflicts: string[] = [];
+
+  if (row.birthDate) {
+    if (!existing.birthDate) {
+      data.birthDate = row.birthDate;
+      data.birthDateIsApproximate = false;
+    } else if (!sameDay(existing.birthDate, row.birthDate)) {
+      conflicts.push('date de naissance');
+    }
+  }
+
+  for (const field of CIVIL_FIELDS) {
+    const value = row[field];
+    if (!value) continue;
+    if (!existing[field]) {
+      data[field] = value;
+      if (field === 'approximateBirth' && !existing.birthDate) data.birthDateIsApproximate = true;
+    } else if (existing[field] !== value) {
+      conflicts.push(field === 'approximateBirth' ? 'date de naissance' : 'lieu de naissance');
+    }
+  }
+
+  return { data, conflicts: [...new Set(conflicts)] };
 }
 
 /**
@@ -209,6 +451,7 @@ export async function importEnrollments(
     rows: parsed.length,
     participantsCreated: 0,
     participantsMatched: 0,
+    participantsCompleted: 0,
     enrolled: 0,
     skipped: 0,
     issues: [...issues],
@@ -223,11 +466,29 @@ export async function importEnrollments(
       if (row.registrationNumber) {
         const existing = await tx.participant.findUnique({
           where: { registrationNumber: row.registrationNumber },
-          select: { id: true },
+          select: {
+            id: true,
+            birthDate: true,
+            approximateBirth: true,
+            birthPlace: true,
+            arabBirthPlace: true,
+          },
         });
         if (existing) {
           participantIds.push(existing.id);
           report.participantsMatched += 1;
+
+          const { data, conflicts } = planCivilStatusUpdate(existing, row);
+          if (Object.keys(data).length > 0) {
+            await tx.participant.update({ where: { id: existing.id }, data });
+            report.participantsCompleted += 1;
+          }
+          for (const conflict of conflicts) {
+            report.issues.push({
+              line: row.line,
+              message: `${row.registrationNumber} : ${conflict} déjà renseignée et différente du fichier — fiche inchangée.`,
+            });
+          }
           continue;
         }
       }
@@ -248,6 +509,10 @@ export async function importEnrollments(
         arabName: row.arabName,
         arabFirstName: row.arabFirstName,
         type: row.type,
+        birthDate: row.birthDate,
+        approximateBirth: row.approximateBirth,
+        birthPlace: row.birthPlace,
+        arabBirthPlace: row.arabBirthPlace,
         phone: row.phone,
         email: row.email,
       });

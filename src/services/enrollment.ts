@@ -108,6 +108,12 @@ export interface QuickParticipantInput {
   arabName?: string | null;
   arabFirstName?: string | null;
   type?: ParticipantTypeLike;
+  /** État civil : facultatif à la saisie, importable, imprimé sur les diplômes. */
+  birthDate?: Date | null;
+  /** Mention en clair quand la date n'est pas exacte (« vers 1975 »). */
+  approximateBirth?: string | null;
+  birthPlace?: string | null;
+  arabBirthPlace?: string | null;
   phone?: string | null;
   email?: string | null;
 }
@@ -126,6 +132,7 @@ export async function createParticipant(db: Db, input: QuickParticipantInput) {
   }
 
   const type: ParticipantTypeLike = input.type ?? 'STUDENT';
+  const approximateBirth = input.approximateBirth?.trim() || null;
 
   return db.participant.create({
     data: {
@@ -134,6 +141,12 @@ export async function createParticipant(db: Db, input: QuickParticipantInput) {
       firstName,
       arabName,
       arabFirstName: input.arabFirstName?.trim() || null,
+      birthDate: input.birthDate ?? null,
+      approximateBirth,
+      // Le drapeau commande l'affichage : sans lui, la mention resterait muette.
+      birthDateIsApproximate: approximateBirth !== null && !input.birthDate,
+      birthPlace: input.birthPlace?.trim() || null,
+      arabBirthPlace: input.arabBirthPlace?.trim() || null,
       phone: input.phone?.trim() || null,
       email: input.email?.trim() || null,
       registrationNumber: await allocateParticipantRegistrationNumber(db, type),

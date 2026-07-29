@@ -21,7 +21,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "docs:template": "tsx scripts/generate-import-template.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
