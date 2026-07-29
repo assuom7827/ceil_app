@@ -5,11 +5,14 @@ contraint vit ici, sous forme de fonctions pures ou de fonctions prenant un
 client Prisma en argument. L'API (`app/api/**`) et l'UI importent ces fonctions ;
 elles ne recalculent jamais une valeur dérivée de leur côté.
 
-## Fichiers prévus
+## Fichiers
 
 | Fichier                   | Rôle                                                                                                                                                                                                                               |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `derive.ts`               | Valeurs **dérivées, jamais stockées** : `deriveParticipantFullName`, `deriveSessionTitle`, `deriveTrainingFullName`, `deriveEntryTotalAndStatus`, `derivePositioningTotal`, `resolveLevelForPoints`, `arabicMonth`, `deriveYears`. |
+| `db.ts`                   | Type `Db` (client Prisma **ou** transaction) et `withTransaction` : tout service accepte l'un comme l'autre.                                                                                                                       |
+| `errors.ts`               | Erreurs de service porteuses d'un `code` et d'un `status`, traduites en réponse HTTP par le wrapper d'API.                                                                                                                         |
+| `documents.ts`            | Assemblage des documents officiels (PV, diplômes, attestations, listes), filtres réglementaires inclus.                                                                                                                            |
 | `registration-numbers.ts` | Génération atomique des matricules (participant `PART-ETU/ENS-{YYYY}-{n}`, inscription via `matriculePrefix`, reçu `PAY-{YYYY}-{n}`).                                                                                              |
 | `locking.ts`              | Règles de verrouillage `OPEN`/`LOCKED` (session, test de positionnement) → conflit 409.                                                                                                                                            |
 | `enrollment.ts`           | Inscription simplifiée `enroll(sessionId, participantIds[])`, doublons ignorés.                                                                                                                                                    |
@@ -24,3 +27,7 @@ elles ne recalculent jamais une valeur dérivée de leur côté.
 1. Aucune valeur dérivée n'est écrite en base.
 2. Aucune règle métier n'est dupliquée dans un Route Handler ou un composant.
 3. Chaque règle est couverte par un test Vitest.
+4. `derive.ts` reste **pur** — ni Prisma, ni React, ni DOM : c'est ce qui permet
+   au navigateur d'importer exactement les fonctions du serveur.
+
+Contrats détaillés : [`docs/architecture.md`](../../docs/architecture.md).

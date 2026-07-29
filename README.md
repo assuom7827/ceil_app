@@ -8,10 +8,25 @@ positionnement (niveau CECRL) → organisation en groupes → session de formati
 délibération (4 compétences, admission) → documents officiels (diplômes,
 attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
-> **État actuel : étapes 1 à 9 terminées.** Le cycle métier est couvert de
+> **État actuel : les 10 étapes sont terminées.** Le cycle métier est couvert de
 > l'inscription aux documents officiels, et vérifié de bout en bout dans un vrai
-> navigateur. 184 tests unitaires et d'intégration, 39 tests e2e. Reste la
-> documentation finale (10).
+> navigateur. 262 tests unitaires et d'intégration, 44 tests e2e.
+> Détail et points ouverts : [`docs/etat-du-projet.md`](./docs/etat-du-projet.md).
+
+---
+
+## Documentation
+
+| Fichier                                              | Contenu                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| **Ce fichier**                                       | Le produit : démarrage, API, écrans, documents officiels     |
+| [`CLAUDE.md`](./CLAUDE.md)                           | **Reprendre le projet** — conventions, règles, pièges connus |
+| [`docs/architecture.md`](./docs/architecture.md)     | Organisation du code et contrats internes                    |
+| [`docs/decisions.md`](./docs/decisions.md)           | Pourquoi le code est ainsi — journal daté                    |
+| [`docs/etat-du-projet.md`](./docs/etat-du-projet.md) | Reste à faire, questions ouvertes, limites connues           |
+| [`docs/exploitation.md`](./docs/exploitation.md)     | Déploiement, reprise de données, sauvegardes                 |
+| [`docs/import-excel.md`](./docs/import-excel.md)     | Format des imports, pour les utilisateurs                    |
+| [`CHANGELOG.md`](./CHANGELOG.md)                     | Historique des livraisons                                    |
 
 ---
 
@@ -97,8 +112,13 @@ courant mais reste en **lecture seule** sur `Training`, `TrainingLevel` et
 ceil_app/
 ├── docker-compose.yml         # PostgreSQL 16 + Adminer
 ├── components.json            # configuration shadcn/ui
+├── CLAUDE.md                  # point d'entrée pour reprendre le projet
+├── docs/                      # architecture, décisions, état, exploitation
+├── scripts/                   # génération du modèle d'import
+├── types/                     # augmentations de types (NextAuth)
 ├── prisma/
-│   ├── schema.prisma          # schéma (étape 2 : modèle normalisé complet)
+│   ├── schema.prisma          # modèle normalisé complet
+│   ├── migrations/            # 3 migrations
 │   └── seed.ts                # seed reproductible
 ├── src/
 │   ├── app/
@@ -310,7 +330,7 @@ en onglets, sans quitter la page.
 | **Positionnement**       | Saisie E.E / C.E, colonnes `total` et `niveau résolu` calculées en direct, « Déterminer les niveaux », import                         |
 | **Notes / Délibération** | Saisie des 4 compétences, `total` et `statut` en direct selon le seuil de la session, « Recalculer les résultats », import            |
 | **Groupes**              | Ouverture des groupes par niveau dimensionnés sur l'effectif, répartition, salles d'examen                                            |
-| **Documents**            | Arrive à l'étape 8                                                                                                                    |
+| **Documents**            | Procès-verbal, diplômes, attestations et listes d'émargement, imprimables en A4                                                       |
 
 L'en-tête reste visible en permanence : titre dérivé, seuil d'admission
 modifiable, état `OPEN`/`LOCKED` avec bouton de verrouillage, et compteurs
@@ -338,10 +358,10 @@ réellement accepté :
 npm run docs:template   # → docs/modele-import-ceil.xlsx
 ```
 
-Chaque import renvoie un rapport : créés, rapprochés, fiches complétées,
-inscrits, ignorés,
-matricules sans correspondance, et lignes en erreur **avec leur numéro de ligne
-dans le fichier**. Une ligne n'est jamais écartée en silence.
+Chaque import renvoie un rapport : participants créés, rapprochés et fiches
+complétées, inscriptions créées et ignorées, matricules sans correspondance, et
+lignes en erreur **avec leur numéro de ligne dans le fichier**. Une ligne n'est
+jamais écartée en silence.
 
 ### Saisie type tableur
 
@@ -428,7 +448,7 @@ plutôt que placés au hasard — signe que le positionnement reste à faire.
 ## Tests
 
 ```bash
-npm test              # 114 tests : unitaires purs + intégration sur PostgreSQL
+npm test              # 262 tests : unitaires purs + intégration sur PostgreSQL
 ```
 
 Les règles qui dépendent réellement du moteur — atomicité des compteurs de
@@ -453,7 +473,7 @@ zéro entre chaque cas.
 npm run test:e2e
 ```
 
-39 tests dans un vrai navigateur, dont un **parcours métier complet** en 13
+44 tests dans un vrai navigateur, dont un **parcours métier complet** en 13
 étapes enchaînées sur une même session (`e2e/journey.spec.ts`) :
 
 création de session → inscription en une étape → import CSV → positionnement →

@@ -143,9 +143,10 @@ describe.skipIf(!hasDb)('diplômes', () => {
     const { session, enrollments } = await setup({ threshold: 50 });
     await upsertDeliberationEntry(prisma, session.id, enrollments[0]!.id, { oralExpression: 10 });
 
-    await expect(
-      getDiplomaDocument(prisma, session.id, enrollments[0]!.id),
-    ).rejects.toMatchObject({ code: 'UNPROCESSABLE', status: 422 });
+    await expect(getDiplomaDocument(prisma, session.id, enrollments[0]!.id)).rejects.toMatchObject({
+      code: 'UNPROCESSABLE',
+      status: 422,
+    });
   });
 
   it('distingue une inscription inconnue d’un refus métier (404)', async () => {
