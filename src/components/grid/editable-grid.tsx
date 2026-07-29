@@ -1,7 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type Row,
+} from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -57,6 +63,128 @@ interface CellRef {
 function isEditable<TRow>(column: GridColumn<TRow>): boolean {
   return column.kind !== 'computed';
 }
+
+/**
+ * Champ de saisie d'une cellule.
+ *
+ * Il conserve sa propre valeur et ne dépend donc PAS de la vitesse à laquelle le
+ * reste de la grille se met à jour : la frappe s'affiche immédiatement, tandis
+ * que la remontée vers le parent — qui recalcule totaux et statuts sur toutes
+ * les lignes — est marquée non urgente. Sans ce découplage, saisir une note sur
+ * une session de 150 inscrits décrochait, chaque touche attendant le rendu
+ * complet de la grille.
+ */
+function GridTextCell({
+  value,
+  label,
+  numeric,
+  alignEnd,
+  error,
+  onCommit,
+  onKeyDown,
+  onPaste,
+  registerRef,
+}: {
+  value: string;
+  label: string;
+  numeric: boolean;
+  alignEnd: boolean;
+  error: string | null;
+  onCommit: (value: string) => void;
+  onKeyDown: (event: React.KeyboardEvent) => void;
+  /** Renvoie la valeur appliquée à cette cellule, si le collage l'a touchée. */
+  onPaste: (event: React.ClipboardEvent) => string | undefined;
+  registerRef: (element: HTMLElement | null) => void;
+}) {
+  const [local, setLocal] = React.useState(value);
+  const focused = React.useRef(false);
+
+  /**
+   * Resynchronisation UNIQUEMENT quand le champ n'a pas le focus.
+   *
+   * Pendant la frappe, la valeur remontée au parent est différée d'un rendu :
+   * la prop `value` est donc temporairement en retard. La recopier écraserait
+   * les caractères déjà saisis — c'est précisément ce qui faisait perdre des
+   * chiffres à la saisie rapide. Hors focus, la prop fait au contraire autorité
+   * (rechargement, import, collage sur une autre cellule).
+   */
+  if (!focused.current && local !== value) setLocal(value);
+
+  return (
+    <div>
+      <input
+        ref={registerRef}
+        value={local}
+        inputMode={numeric ? 'decimal' : undefined}
+        onFocus={() => {
+          focused.current = true;
+        }}
+        onBlur={() => {
+          focused.current = false;
+        }}
+        onChange={(event) => {
+          const next = event.target.value;
+          setLocal(next); // urgent : le champ suit la frappe
+          React.startTransition(() => onCommit(next)); // différé : colonnes calculées
+        }}
+        onKeyDown={onKeyDown}
+        onPaste={(event) => {
+          // Le collage multi-cellules est traité par la grille ; elle renvoie
+          // la valeur destinée à CETTE cellule, que le champ doit refléter.
+          const applied = onPaste(event);
+          if (applied !== undefined) setLocal(applied);
+        }}
+        aria-label={label}
+        aria-invalid={error !== null}
+        className={cn(
+          'h-8 w-full rounded border border-transparent bg-transparent px-1 text-sm',
+          'hover:border-input focus:border-ring focus:outline-none',
+          alignEnd && 'text-end',
+          error && 'border-destructive',
+        )}
+      />
+      {error ? <p className="px-1 text-xs text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Ligne mémorisée : elle n'est re-rendue que si SES valeurs changent.
+ *
+ * `row` et le contexte TanStack restent identiques tant que les données ne
+ * bougent pas ; seule l'empreinte `signature` distingue une ligne modifiée.
+ */
+const MemoizedRow = React.memo(
+  function GridRow({
+    row,
+    selected,
+    dirty,
+  }: {
+    row: Row<unknown>;
+    /** Comparée par `React.memo` — non lue dans le rendu. */
+    signature: string;
+    selected: boolean;
+    dirty: boolean;
+  }) {
+    return (
+      <TableRow
+        data-state={selected ? 'selected' : undefined}
+        className={cn(dirty && 'bg-primary/5')}
+      >
+        {row.getVisibleCells().map((cell) => (
+          <TableCell key={cell.id}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </TableCell>
+        ))}
+      </TableRow>
+    );
+  },
+  (previous, next) =>
+    previous.row === next.row &&
+    previous.signature === next.signature &&
+    previous.selected === next.selected &&
+    previous.dirty === next.dirty,
+);
 
 /**
  * Grille de saisie type tableur.
@@ -132,9 +260,9 @@ export function EditableGrid<TRow>({
    * saisissent pas.
    */
   const handlePaste = React.useCallback(
-    (event: React.ClipboardEvent, position: CellRef) => {
+    (event: React.ClipboardEvent, position: CellRef): string | undefined => {
       const text = event.clipboardData.getData('text/plain');
-      if (!text.includes('\t') && !text.includes('\n')) return; // collage simple
+      if (!text.includes('\t') && !text.includes('\n')) return undefined; // collage simple
 
       event.preventDefault();
       const matrix = text
@@ -143,6 +271,8 @@ export function EditableGrid<TRow>({
         .filter((line, index, all) => line.length > 0 || index < all.length - 1)
         .map((line) => line.split('\t'));
 
+      let appliedHere: string | undefined;
+
       matrix.forEach((cells, rowOffset) => {
         const targetRow = rows[position.row + rowOffset];
         if (!targetRow) return;
@@ -150,9 +280,13 @@ export function EditableGrid<TRow>({
         cells.forEach((value, colOffset) => {
           const column = editableColumns[position.col + colOffset];
           if (!column) return;
-          onChange(rowId(targetRow), column.key, value.trim());
+          const trimmed = value.trim();
+          if (rowOffset === 0 && colOffset === 0) appliedHere = trimmed;
+          onChange(rowId(targetRow), column.key, trimmed);
         });
       });
+
+      return appliedHere;
     },
     [editableColumns, onChange, rowId, rows],
   );
@@ -283,30 +417,18 @@ export function EditableGrid<TRow>({
             );
           }
 
-          const error = live.validate?.(value) ?? null;
-
           return (
-            <div>
-              <input
-                ref={(element) => registerCell(position, element)}
-                value={value}
-                inputMode={column.kind === 'number' ? 'decimal' : undefined}
-                onChange={(event) =>
-                  onChangeNow(rowIdNow(row.original), column.key, event.target.value)
-                }
-                onKeyDown={(event) => latest.current.handleKeyDown(event, position)}
-                onPaste={(event) => latest.current.handlePaste(event, position)}
-                aria-label={column.header}
-                aria-invalid={error !== null}
-                className={cn(
-                  'h-8 w-full rounded border border-transparent bg-transparent px-1 text-sm',
-                  'hover:border-input focus:border-ring focus:outline-none',
-                  live.align === 'end' && 'text-end',
-                  error && 'border-destructive',
-                )}
-              />
-              {error ? <p className="px-1 text-xs text-destructive">{error}</p> : null}
-            </div>
+            <GridTextCell
+              value={value}
+              label={column.header}
+              numeric={column.kind === 'number'}
+              alignEnd={live.align === 'end'}
+              error={live.validate?.(value) ?? null}
+              onCommit={(next) => onChangeNow(rowIdNow(row.original), column.key, next)}
+              onKeyDown={(event) => latest.current.handleKeyDown(event, position)}
+              onPaste={(event) => latest.current.handlePaste(event, position)}
+              registerRef={(element) => registerCell(position, element)}
+            />
           );
         },
       });
@@ -334,6 +456,17 @@ export function EditableGrid<TRow>({
     getCoreRowModel: getCoreRowModel(),
   });
 
+  /**
+   * Empreinte des valeurs affichées d'une ligne, colonnes calculées comprises.
+   *
+   * C'est elle qui décide si la ligne doit être re-rendue. Sans cela, une frappe
+   * dans une cellule re-rendrait TOUTES les lignes : sur une session de 150
+   * inscrits, cela représente plus de mille champs reconstruits à chaque touche,
+   * et la saisie décroche.
+   */
+  const rowSignature = (row: TRow): string =>
+    latest.current.columns.map((column) => column.get(row)).join('');
+
   if (rows.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>;
   }
@@ -353,18 +486,18 @@ export function EditableGrid<TRow>({
       </TableHeader>
 
       <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow
-            key={row.id}
-            className={cn(dirtyRowIds?.has(rowId(row.original)) && 'bg-primary/5')}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
+        {table.getRowModel().rows.map((row) => {
+          const id = rowId(row.original);
+          return (
+            <MemoizedRow
+              key={row.id}
+              row={row as Row<unknown>}
+              signature={rowSignature(row.original)}
+              selected={selection?.selected.has(id) ?? false}
+              dirty={dirtyRowIds?.has(id) ?? false}
+            />
+          );
+        })}
       </TableBody>
     </Table>
   );
