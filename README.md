@@ -323,6 +323,12 @@ notes de délibération. Formats acceptés `.xlsx`, `.xls`, `.csv` ; les en-têt
 sont normalisés (casse, accents et diacritiques arabes ignorés), l'ordre des
 colonnes est libre.
 
+L'import des inscrits couvre aussi l'**état civil** — date et lieu de naissance,
+imprimés sur les diplômes. Les dates sont lues en jour d'abord, l'année seule ou
+« vers 1975 » est conservée comme date approximative plutôt que transformée en
+1er janvier. Sur un participant déjà connu, l'import **complète les champs
+vides** et n'écrase jamais une saisie : toute divergence est signalée.
+
 **Format détaillé et modèle prêt à l'emploi : [`docs/import-excel.md`](./docs/import-excel.md).**
 
 Le modèle se régénère depuis le code, pour qu'il ne dérive pas du format
@@ -332,7 +338,8 @@ réellement accepté :
 npm run docs:template   # → docs/modele-import-ceil.xlsx
 ```
 
-Chaque import renvoie un rapport : créés, rapprochés, inscrits, ignorés,
+Chaque import renvoie un rapport : créés, rapprochés, fiches complétées,
+inscrits, ignorés,
 matricules sans correspondance, et lignes en erreur **avec leur numéro de ligne
 dans le fichier**. Une ligne n'est jamais écartée en silence.
 

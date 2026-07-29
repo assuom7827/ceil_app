@@ -42,8 +42,8 @@ cette page ne peut pas promettre un intitulé que le code n'accepterait pas.
 
 Chaque import renvoie un rapport affiché à l'écran :
 
-- nombre de participants **créés** et **rapprochés**, d'inscriptions **créées**
-  et **ignorées** ;
+- nombre de participants **créés**, **rapprochés** et de fiches **complétées**,
+  d'inscriptions **créées** et **ignorées** ;
 - **matricules sans correspondance**, listés un par un ;
 - **lignes en erreur avec leur numéro de ligne dans le fichier**, en-tête
   comprise — le même numéro que celui affiché par Excel.
@@ -60,23 +60,55 @@ Onglet **Inscrits** → bouton « Importer des inscrits ».
 
 ### Colonnes
 
-| Colonne        | Autres intitulés acceptés                            | Obligatoire      |
-| -------------- | ---------------------------------------------------- | ---------------- |
-| `Nom`          | `Nom de famille`, `Family name`, `اللقب`             | l'un des trois ✻ |
-| `Prénom`       | `Prénoms`, `First name`, `الاسم`                     | ✻                |
-| `Nom arabe`    | `Nom ar`, `اللقب بالعربية`                           | ✻                |
-| `Prénom arabe` | `Prénom ar`, `الاسم بالعربية`                        | non              |
-| `Type`         | `Catégorie`, `الصفة`                                 | non              |
-| `Téléphone`    | `Tél`, `Phone`, `الهاتف`                             | non              |
-| `Email`        | `Mail`, `Courriel`                                   | non              |
-| `Matricule`    | `Numéro`, `N°`, `Registration number`, `رقم التسجيل` | non              |
+| Colonne                   | Autres intitulés acceptés                            | Obligatoire      |
+| ------------------------- | ---------------------------------------------------- | ---------------- |
+| `Nom`                     | `Nom de famille`, `Family name`, `اللقب`             | l'un des trois ✻ |
+| `Prénom`                  | `Prénoms`, `First name`, `الاسم`                     | ✻                |
+| `Nom arabe`               | `Nom ar`, `اللقب بالعربية`                           | ✻                |
+| `Prénom arabe`            | `Prénom ar`, `الاسم بالعربية`                        | non              |
+| `Date de naissance`       | `Naissance`, `Né le`, `Né(e) le`, `تاريخ الميلاد`    | non              |
+| `Lieu de naissance`       | `Né à`, `Née à`, `مكان الميلاد`                      | non              |
+| `Lieu de naissance arabe` | `مكان الميلاد بالعربية`                              | non              |
+| `Type`                    | `Catégorie`, `الصفة`                                 | non              |
+| `Téléphone`               | `Tél`, `Phone`, `الهاتف`                             | non              |
+| `Email`                   | `Mail`, `Courriel`                                   | non              |
+| `Matricule`               | `Numéro`, `N°`, `Registration number`, `رقم التسجيل` | non              |
 
 ✻ Il faut **au moins un nom** (latin ou arabe) **ou** un matricule.
+
+Date et lieu de naissance ne servent pas qu'à la fiche : ils **s'impriment sur
+les diplômes et les attestations**. Les importer évite de les ressaisir un à un.
 
 ### Colonne `Type`
 
 `Enseignant`, `ENS`, `Prof`, `Professeur`, `أستاذ` → participant **enseignant**.
 Toute autre valeur, ou colonne absente → **étudiant**.
+
+### Colonne `Date de naissance`
+
+| Ce que contient la cellule               | Lu comme                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| Une **vraie cellule date** Excel         | la date, sans ambiguïté — le plus sûr                              |
+| `28/07/1998`, `28-07-1998`, `28.07.1998` | 28 juillet 1998                                                    |
+| `1998-07-28`                             | 28 juillet 1998                                                    |
+| `28/07/98`                               | 1998 — l'année à deux chiffres n'est jamais projetée dans le futur |
+| `7/28/1998` (fichier anglais)            | 28 juillet 1998                                                    |
+| `1998`                                   | naissance **approximative** : « 1998 »                             |
+| `vers 1975`, `حوالي 1975`                | naissance **approximative**, mention conservée telle quelle        |
+| Autre chose                              | ligne **conservée**, date **signalée** en erreur                   |
+
+**Le jour vient en premier.** `03/04/1998` est lu 3 avril, pas 4 mars. Un fichier
+exporté en anglais est malgré tout bien lu dès que le second nombre dépasse 12
+(`7/28/1998`), puisqu'il ne peut alors pas être un mois. Pour les dates
+réellement ambiguës, la seule façon d'être sûr est d'utiliser une **cellule de
+type date** plutôt que du texte.
+
+Une année seule ou une mention « vers … » n'est pas transformée en 1er janvier :
+elle est rangée dans la **date approximative** de la fiche, et c'est elle qui
+s'affiche. Inventer un jour serait plus grave que de rester approximatif.
+
+Une date illisible ne fait **pas perdre la ligne** : le participant est créé et
+inscrit, et la date est listée dans le rapport pour être corrigée.
 
 ### Colonne `Matricule` — le point à connaître
 
@@ -89,6 +121,17 @@ Toute autre valeur, ou colonne absente → **étudiant**.
 Pour réinscrire d'anciens participants, le matricule **seul suffit** : inutile de
 recopier noms et coordonnées.
 
+#### Compléter une fiche existante
+
+Quand la ligne rapproche un participant déjà connu, l'import **remplit les
+champs d'état civil restés vides** (date, lieu de naissance) et compte la fiche
+dans « complétée(s) ».
+
+Il **n'écrase jamais une valeur déjà saisie**. Si le fichier dit autre chose que
+la fiche, la fiche est laissée telle quelle et la divergence est listée dans le
+rapport : un fichier n'est pas plus fiable qu'une saisie, l'arbitrage revient à
+une personne.
+
 > Le rapprochement ne se fait **jamais sur le seul nom** : deux homonymes sont
 > deux personnes différentes. Sans matricule, un participant est créé.
 
@@ -100,11 +143,11 @@ est ignoré sans erreur et compté dans « ignorés ».
 
 ### Exemple
 
-| Matricule            | Nom     | Prénom | Nom arabe | Type       | Téléphone  |
-| -------------------- | ------- | ------ | --------- | ---------- | ---------- |
-|                      | BENALI  | Amina  | بن علي    | Étudiant   | 0550112233 |
-|                      | ZEROUAL | Karim  |           | Enseignant | 0661445566 |
-| `PART-ETU-2026-0001` |         |        |           |            |            |
+| Matricule            | Nom     | Prénom | Nom arabe | Date de naissance | Lieu de naissance | Type       | Téléphone  |
+| -------------------- | ------- | ------ | --------- | ----------------- | ----------------- | ---------- | ---------- |
+|                      | BENALI  | Amina  | بن علي    | 28/07/1998        | Mostaganem        | Étudiant   | 0550112233 |
+|                      | ZEROUAL | Karim  |           | vers 1975         | Oran              | Enseignant | 0661445566 |
+| `PART-ETU-2026-0001` |         |        |           |                   |                   |            |            |
 
 ---
 

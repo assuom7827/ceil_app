@@ -6,8 +6,17 @@
  * que le code ne fait pas — c'est exactement l'erreur qui a été commise avec
  * « N° », annoncé comme reconnu alors qu'il ne l'était pas.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { COLUMNS, normalizeHeader, parseParticipantType } from '@/services/imports';
+import * as XLSX from 'xlsx';
+import {
+  COLUMNS,
+  normalizeHeader,
+  parseEnrollmentRows,
+  parseParticipantType,
+  parseTabular,
+} from '@/services/imports';
 
 type Field = keyof typeof COLUMNS;
 
@@ -37,6 +46,22 @@ const DOCUMENTED: Array<[string, Field]> = [
   ['Nom ar', 'arabName'],
   ['Prénom arabe', 'arabFirstName'],
   ['Prénom ar', 'arabFirstName'],
+
+  // État civil
+  ['Date de naissance', 'birthDate'],
+  ['Date naissance', 'birthDate'],
+  ['Naissance', 'birthDate'],
+  ['Né le', 'birthDate'],
+  ['Né(e) le', 'birthDate'],
+  ['Birth date', 'birthDate'],
+  ['تاريخ الميلاد', 'birthDate'],
+  ['Lieu de naissance', 'birthPlace'],
+  ['Né à', 'birthPlace'],
+  ['Née à', 'birthPlace'],
+  ['Birth place', 'birthPlace'],
+  ['مكان الميلاد', 'birthPlace'],
+  ['Lieu de naissance arabe', 'arabBirthPlace'],
+  ['مكان الميلاد بالعربية', 'arabBirthPlace'],
 
   // Coordonnées et rattachement
   ['Type', 'type'],
@@ -98,6 +123,46 @@ describe('en-têtes documentés', () => {
   it('considère tout le reste comme étudiant', () => {
     for (const value of ['Étudiant', 'etudiant', 'externe', '', null]) {
       expect(parseParticipantType(value), String(value)).toBe('STUDENT');
+    }
+  });
+});
+
+/**
+ * Le modèle distribué aux utilisateurs est relu par le code qui l'importera :
+ * s'il cessait d'être compris — parce que le format a bougé sans que
+ * `npm run docs:template` soit relancé — l'échec est ici, pas chez eux.
+ */
+describe('modèle docs/modele-import-ceil.xlsx', () => {
+  const file = readFileSync(resolve(process.cwd(), 'docs/modele-import-ceil.xlsx'));
+  const workbook = XLSX.read(file, { type: 'buffer' });
+
+  it('se lit comme un fichier d’inscrits valide', () => {
+    const { parsed, issues } = parseEnrollmentRows(parseTabular(file));
+
+    expect(issues).toEqual([]);
+    expect(parsed).toHaveLength(3);
+    expect(parsed[0]).toMatchObject({
+      familyName: 'BENALI',
+      firstName: 'Amina',
+      birthPlace: 'Mostaganem',
+      type: 'STUDENT',
+    });
+    expect(parsed[0]!.birthDate?.toISOString().slice(0, 10)).toBe('1998-07-28');
+    expect(parsed[1]).toMatchObject({ type: 'TEACHER', approximateBirth: 'vers 1975' });
+    // Réinscription : le matricule seul, sans nom.
+    expect(parsed[2]).toMatchObject({ familyName: null, registrationNumber: 'PART-ETU-2026-0001' });
+  });
+
+  it('n’utilise que des intitulés reconnus, sur les trois feuilles', () => {
+    expect(workbook.SheetNames).toEqual(['Inscrits', 'Positionnement', 'Notes']);
+
+    for (const name of workbook.SheetNames) {
+      const [headers = []] = XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[name]!, {
+        header: 1,
+      });
+      for (const header of headers) {
+        expect(fieldFor(header), `${name} / ${header}`).not.toBeNull();
+      }
     }
   });
 });
