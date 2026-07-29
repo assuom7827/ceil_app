@@ -4,32 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Fond légèrement gris : les cartes blanches s'en détachent, au lieu de se
+       fondre dans un blanc uniforme. */
+    --background: 210 24% 96%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 201 96% 32%;
+    --primary: 201 96% 28%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
+    --secondary: 210 30% 92%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
+    --muted: 210 28% 93%;
+    --muted-foreground: 215 18% 42%;
+    --accent: 201 70% 93%;
+    --accent-foreground: 201 96% 22%;
+    --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 35%;
+    --success: 142 66% 30%;
     --success-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    /* Bordures assez marquées pour structurer sans alourdir. */
+    --border: 214 24% 85%;
+    --input: 214 22% 80%;
     --ring: 201 96% 32%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 222 47% 9%;
     --foreground: 210 40% 98%;
     --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
@@ -41,7 +44,7 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 18%;
+    --accent: 201 45% 22%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 41%;
     --destructive-foreground: 210 40% 98%;
@@ -61,6 +64,11 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+  }
+
+  /* Les nombres d'une colonne restent alignés d'une ligne à l'autre. */
+  table {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Documents et interface en arabe : sens de lecture droite → gauche */

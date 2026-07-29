@@ -169,7 +169,10 @@ const MemoizedRow = React.memo(
     return (
       <TableRow
         data-state={selected ? 'selected' : undefined}
-        className={cn(dirty && 'bg-primary/5')}
+        // `!` assumé : l'état de la ligne (modifiée, sélectionnée) doit primer
+        // sur le zébrage décoratif du corps de table, dont le sélecteur est plus
+        // spécifique. Se reposer sur l'ordre des classes serait fragile.
+        className={cn(dirty ? '!bg-primary/10' : selected ? '!bg-accent/60' : undefined)}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell key={cell.id}>
