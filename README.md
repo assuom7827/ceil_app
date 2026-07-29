@@ -75,6 +75,7 @@ courant mais reste en **lecture seule** sur `Training`, `TrainingLevel` et
 | `npm run db:seed`             | Données de démonstration                 |
 | `npm run db:studio`           | Prisma Studio                            |
 | `npm run db:reset`            | Réinitialisation complète de la base     |
+| `npm run docs:template`       | Régénère le modèle d'import Excel        |
 
 ## Stack
 
@@ -314,6 +315,26 @@ en onglets, sans quitter la page.
 L'en-tête reste visible en permanence : titre dérivé, seuil d'admission
 modifiable, état `OPEN`/`LOCKED` avec bouton de verrouillage, et compteurs
 (inscrits, groupes, admis, ajournés, non délibérés).
+
+### Imports Excel / CSV
+
+Trois imports depuis l'espace de travail : inscrits, notes de positionnement,
+notes de délibération. Formats acceptés `.xlsx`, `.xls`, `.csv` ; les en-têtes
+sont normalisés (casse, accents et diacritiques arabes ignorés), l'ordre des
+colonnes est libre.
+
+**Format détaillé et modèle prêt à l'emploi : [`docs/import-excel.md`](./docs/import-excel.md).**
+
+Le modèle se régénère depuis le code, pour qu'il ne dérive pas du format
+réellement accepté :
+
+```bash
+npm run docs:template   # → docs/modele-import-ceil.xlsx
+```
+
+Chaque import renvoie un rapport : créés, rapprochés, inscrits, ignorés,
+matricules sans correspondance, et lignes en erreur **avec leur numéro de ligne
+dans le fichier**. Une ligne n'est jamais écartée en silence.
 
 ### Saisie type tableur
 

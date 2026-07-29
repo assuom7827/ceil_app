@@ -32,6 +32,10 @@ export function normalizeHeader(header: string): string {
       .normalize('NFD')
       // Diacritiques latins (U+0300–U+036F) et arabes (U+064B–U+065F, U+0670).
       .replace(/[̀-ًͯ-ٰٟ]/g, '')
+      // « N° » est l'abréviation courante de « numéro » : en rendant le signe
+      // degré, on retombe sur l'alias « no ». Un « N » seul — souvent un simple
+      // numéro de ligne — reste volontairement non reconnu.
+      .replace(/°/g, 'o')
       .toLowerCase()
       .replace(/[^a-z0-9؀-ۿ]+/g, ' ')
       .trim()
