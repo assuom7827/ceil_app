@@ -8,13 +8,18 @@ import { ResourceForm, toFieldErrors } from '@/components/crud/resource-form';
 import type { ResourceRecord } from '@/components/crud/fields';
 import { ApiError, apiDelete, apiGet, apiPatch } from '@/lib/api/client';
 import { sessionFormFields } from './session-fields';
+import type { Role } from '@/services/rbac';
 
 export function SessionActions({
   sessionId,
+  role,
   canWrite,
+  enrollmentCount,
 }: {
   sessionId: string;
+  role: Role | null;
   canWrite: boolean;
+  enrollmentCount: number;
 }) {
   const router = useRouter();
   const [editing, setEditing] = React.useState(false);
@@ -24,6 +29,8 @@ export function SessionActions({
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
 
   if (!canWrite) return null;
+
+  const canDelete = role === 'ADMIN' || (role === 'MANAGER' && enrollmentCount === 0);
 
   async function openEdit() {
     setEditing(true);
@@ -66,12 +73,17 @@ export function SessionActions({
   }
 
   async function remove() {
+    if (!canDelete) return;
     if (!window.confirm('Supprimer cette session ? Cette action est irréversible.')) return;
     try {
       await apiDelete(`/api/sessions/${sessionId}`);
       router.refresh();
-    } catch {
-      // La session possède probablement des inscriptions ou groupes liés.
+    } catch (caught) {
+      const message =
+        caught instanceof ApiError
+          ? caught.message
+          : 'Suppression impossible : des inscriptions sont liées à cette session.';
+      window.alert(message);
     }
   }
 
@@ -81,15 +93,28 @@ export function SessionActions({
         <Button size="sm" variant="ghost" onClick={openEdit} aria-label="Modifier">
           <Pencil />
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={remove}
-          aria-label="Supprimer"
-          className="text-destructive"
-        >
-          <Trash2 />
-        </Button>
+        {canDelete ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={remove}
+            aria-label="Supprimer"
+            className="text-destructive"
+          >
+            <Trash2 />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled
+            aria-label="Suppression bloquée — des inscrits sont liés"
+            className="text-muted-foreground"
+            title="Suppression bloquée : des inscrits sont liés à cette session."
+          >
+            <Trash2 />
+          </Button>
+        )}
       </div>
 
       <ResourceForm
