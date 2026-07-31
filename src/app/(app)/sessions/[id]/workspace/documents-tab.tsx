@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Award, ExternalLink, FileDown, FileText, ScrollText, Users } from 'lucide-react';
+import { ExternalLink, FileDown, FileText, ScrollText, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { apiGet } from '@/lib/api/client';
@@ -49,18 +49,6 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
       label: 'Procès-verbal de délibération',
       description: `Tableau des notes des ${admission?.total ?? 0} inscrit(s), paginé et signé.`,
       icon: <ScrollText className="size-4" />,
-    },
-    {
-      href: `/print/sessions/${sessionId}/diplomas`,
-      label: 'Diplômes des admis',
-      description: `${admission?.admitted ?? 0} diplôme(s), une feuille par admis, bilingue.`,
-      icon: <Award className="size-4" />,
-      // Le service refuse déjà d'émettre un diplôme à un ajourné ; on évite
-      // simplement d'ouvrir une page vide.
-      blocked:
-        admission && admission.admitted === 0
-          ? 'Aucun admis pour l’instant : saisissez les notes puis recalculez.'
-          : undefined,
     },
     {
       href: `/print/sessions/${sessionId}/attestations`,

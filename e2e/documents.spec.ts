@@ -84,7 +84,7 @@ test.describe('documents imprimables', () => {
     await page.getByRole('tab', { name: 'Documents' }).click();
 
     await expect(page.getByText('Procès-verbal de délibération')).toBeVisible();
-    await expect(page.getByText('Diplômes des admis')).toBeVisible();
+    await expect(page.getByText('Attestations de réussite (PDF)')).toBeVisible();
     await expect(page.getByText('Liste des participants')).toBeVisible();
   });
 
