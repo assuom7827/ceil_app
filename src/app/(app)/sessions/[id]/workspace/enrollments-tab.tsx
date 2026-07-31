@@ -9,7 +9,7 @@ import { deriveParticipantFullName } from '@/services/derive';
 import { EnrollDialog } from './enroll-dialog';
 import { FeedbackBanner, Spinner, useAction } from './feedback';
 import { ImportButton } from './import-button';
-import type { EnrollmentRow, EnrollmentsPayload, GroupRow, NamedRef } from './types';
+import type { EnrollmentRow, EnrollmentsPayload, GroupRow } from './types';
 
 type Draft = {
   kind: string;
@@ -39,7 +39,6 @@ export function EnrollmentsTab({
   onCountChange: (count: number) => void;
 }) {
   const [payload, setPayload] = React.useState<EnrollmentsPayload | null>(null);
-  const [levels, setLevels] = React.useState<NamedRef[]>([]);
   const [groups, setGroups] = React.useState<GroupRow[]>([]);
   const [drafts, setDrafts] = React.useState<Map<string, Draft>>(new Map());
   const [dirty, setDirty] = React.useState<Set<string>>(new Set());
@@ -47,14 +46,12 @@ export function EnrollmentsTab({
   const { pending, feedback, run } = useAction();
 
   const load = React.useCallback(async () => {
-    const [enrollments, levelPage, sessionGroups] = await Promise.all([
+    const [enrollments, sessionGroups] = await Promise.all([
       apiGet<EnrollmentsPayload>(`/api/sessions/${sessionId}/enrollments`),
-      apiGet<{ data: NamedRef[] }>('/api/training-levels?perPage=100&sort=sequence'),
       apiGet<GroupRow[]>(`/api/sessions/${sessionId}/groups/organize-by-level`),
     ]);
 
     setPayload(enrollments);
-    setLevels(levelPage.data);
     setGroups(sessionGroups);
     setDrafts(new Map(enrollments.rows.map((row) => [row.id, toDraft(row)])));
     setDirty(new Set());
@@ -91,6 +88,8 @@ export function EnrollmentsTab({
     }),
     [groups],
   );
+
+  const levels = React.useMemo(() => payload?.session.levels ?? [], [payload?.session.levels]);
 
   const columns = React.useMemo<Array<GridColumn<EnrollmentRow>>>(
     () => [

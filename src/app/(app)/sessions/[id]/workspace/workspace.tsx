@@ -44,8 +44,8 @@ export function Workspace({
         <TabsList className="flex-wrap">
           <TabsTrigger value="enrollments">Inscrits</TabsTrigger>
           <TabsTrigger value="positioning">Positionnement</TabsTrigger>
-          <TabsTrigger value="deliberation">Notes / Délibération</TabsTrigger>
           <TabsTrigger value="groups">Groupes</TabsTrigger>
+          <TabsTrigger value="deliberation">Notes / Délibération</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
@@ -62,21 +62,21 @@ export function Workspace({
           <PositioningTab sessionId={session.id} canWrite={permissions.scores} locked={locked} />
         </TabsContent>
 
-        <TabsContent value="deliberation">
-          <DeliberationTab
-            sessionId={session.id}
-            canWrite={permissions.scores}
-            locked={locked}
-            onAdmissionChange={setAdmission}
-          />
-        </TabsContent>
-
         <TabsContent value="groups">
           <GroupsTab
             sessionId={session.id}
             canWrite={permissions.groups}
             locked={locked}
             onCountChange={setGroupCount}
+          />
+        </TabsContent>
+
+        <TabsContent value="deliberation">
+          <DeliberationTab
+            sessionId={session.id}
+            canWrite={permissions.scores}
+            locked={locked}
+            onAdmissionChange={setAdmission}
           />
         </TabsContent>
 

@@ -48,6 +48,11 @@ export function hasFullAccess(role: Role): boolean {
   return FULL_ACCESS_ROLES.includes(role);
 }
 
+/** MANAGER et ADMIN gèrent la configuration — pas les utilisateurs classiques. */
+export function canManageSessions(role: Role): boolean {
+  return hasFullAccess(role);
+}
+
 /** Toute ressource métier est lisible par un utilisateur authentifié. */
 export function canRead(actor: Actor | null | undefined, resource: Resource): boolean {
   if (!actor) return false;
