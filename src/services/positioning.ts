@@ -11,6 +11,7 @@ import { withTransaction } from './db';
 import { derivePositioningTotal, resolveLevelForPoints, type LevelIntervalInput } from './derive';
 import { notFoundError } from './errors';
 import { assertPositioningTestWritable } from './locking';
+import { logAudit } from './audit';
 
 export interface ResolveLevelsResult {
   /** Inscriptions dont le niveau attribué a changé. */
@@ -22,6 +23,9 @@ export interface ResolveLevelsResult {
   /** Notes ignorées car leur session est verrouillée. */
   skippedLocked: number;
 }
+
+export const ACTION_POSITIONING_SCORE_UPSERTED = 'POSITIONING_SCORE_UPSERTED';
+export const ACTION_ENROLLMENT_LEVEL_RESOLVED = 'ENROLLMENT_LEVEL_RESOLVED';
 
 /** Niveaux actifs proposés par la formation du test, triés par séquence. */
 async function levelsForTraining(db: Db, trainingId: string): Promise<LevelIntervalInput[]> {
@@ -49,6 +53,7 @@ async function levelsForTraining(db: Db, trainingId: string): Promise<LevelInter
 export async function resolveLevels(
   db: Db,
   positioningTestId: string,
+  actorId?: string,
 ): Promise<ResolveLevelsResult> {
   await assertPositioningTestWritable(db, positioningTestId);
 
@@ -71,6 +76,7 @@ export async function resolveLevels(
         select: {
           id: true,
           assignedLevelId: true,
+          assignedLevel: { select: { id: true, name: true } },
           trainingSession: { select: { state: true } },
         },
       },
@@ -84,7 +90,7 @@ export async function resolveLevels(
     skippedLocked: 0,
   };
 
-  const updates: Array<{ enrollmentId: string; levelId: string }> = [];
+  const updates: Array<{ enrollmentId: string; levelId: string; oldLevelId: string | null }> = [];
 
   for (const score of scores) {
     if (score.enrollment.trainingSession.state === 'LOCKED') {
@@ -99,10 +105,9 @@ export async function resolveLevels(
       result.unresolved += 1;
       continue;
     }
-    // Une réaffectation à l'identique n'est pas une mise à jour.
     if (score.enrollment.assignedLevelId === level.id) continue;
 
-    updates.push({ enrollmentId: score.enrollment.id, levelId: level.id });
+    updates.push({ enrollmentId: score.enrollment.id, levelId: level.id, oldLevelId: score.enrollment.assignedLevelId });
   }
 
   if (updates.length > 0) {
@@ -112,6 +117,17 @@ export async function resolveLevels(
           where: { id: update.enrollmentId },
           data: { assignedLevelId: update.levelId },
         });
+
+        if (actorId) {
+          await logAudit(tx, {
+            actorId,
+            action: ACTION_ENROLLMENT_LEVEL_RESOLVED,
+            entityType: 'Enrollment',
+            entityId: update.enrollmentId,
+            oldValue: { assignedLevelId: update.oldLevelId },
+            newValue: { assignedLevelId: update.levelId },
+          });
+        }
       }
     });
   }
@@ -259,12 +275,36 @@ export async function upsertPositioningScore(
   positioningTestId: string,
   enrollmentId: string,
   values: { writtenExpression?: number | null; writtenComprehension?: number | null },
+  actorId?: string,
 ) {
   await assertPositioningTestWritable(db, positioningTestId);
 
-  return db.positioningScore.upsert({
+  const previous = await db.positioningScore.findUnique({
+    where: { enrollmentId },
+    select: {
+      writtenExpression: true,
+      writtenComprehension: true,
+    },
+  });
+
+  const updated = await db.positioningScore.upsert({
     where: { enrollmentId },
     update: values,
     create: { enrollmentId, positioningTestId, ...values },
   });
+
+  if (actorId) {
+    await logAudit(db, {
+      actorId,
+      action: ACTION_POSITIONING_SCORE_UPSERTED,
+      entityType: 'PositioningScore',
+      entityId: updated.id,
+      oldValue: previous
+        ? { writtenExpression: previous.writtenExpression, writtenComprehension: previous.writtenComprehension }
+        : null,
+      newValue: { writtenExpression: updated.writtenExpression, writtenComprehension: updated.writtenComprehension },
+    });
+  }
+
+  return updated;
 }

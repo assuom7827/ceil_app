@@ -7,8 +7,14 @@
  */
 import type { Db } from './db';
 import { lockedError, notFoundError } from './errors';
+import { logAudit } from './audit';
 
 export type WorkflowState = 'OPEN' | 'LOCKED';
+
+export const ACTION_SESSION_LOCKED = 'SESSION_LOCKED';
+export const ACTION_SESSION_UNLOCKED = 'SESSION_UNLOCKED';
+export const ACTION_POSITIONING_LOCKED = 'POSITIONING_TEST_LOCKED';
+export const ACTION_POSITIONING_UNLOCKED = 'POSITIONING_TEST_UNLOCKED';
 
 // ---------------------------------------------------------------------------
 // Session de formation
@@ -55,13 +61,37 @@ export async function assertEnrollmentWritable(db: Db, enrollmentId: string): Pr
   }
 }
 
-export async function setSessionState(db: Db, trainingSessionId: string, state: WorkflowState) {
+export async function setSessionState(
+  db: Db,
+  trainingSessionId: string,
+  state: WorkflowState,
+  actorId?: string,
+) {
   await getSessionState(db, trainingSessionId); // 404 si absente
-  return db.trainingSession.update({ where: { id: trainingSessionId }, data: { state } });
+  const previous = await db.trainingSession.findUnique({
+    where: { id: trainingSessionId },
+    select: { state: true },
+  });
+  const updated = await db.trainingSession.update({ where: { id: trainingSessionId }, data: { state } });
+
+  if (actorId && previous?.state !== state) {
+    await logAudit(db, {
+      actorId,
+      action: state === 'LOCKED' ? ACTION_SESSION_LOCKED : ACTION_SESSION_UNLOCKED,
+      entityType: 'TrainingSession',
+      entityId: trainingSessionId,
+      oldValue: { state: previous?.state },
+      newValue: { state: updated.state },
+    });
+  }
+
+  return updated;
 }
 
-export const lockSession = (db: Db, id: string) => setSessionState(db, id, 'LOCKED');
-export const unlockSession = (db: Db, id: string) => setSessionState(db, id, 'OPEN');
+export const lockSession = (db: Db, id: string, actorId?: string) =>
+  setSessionState(db, id, 'LOCKED', actorId);
+export const unlockSession = (db: Db, id: string, actorId?: string) =>
+  setSessionState(db, id, 'OPEN', actorId);
 
 // ---------------------------------------------------------------------------
 // Test de positionnement
@@ -86,12 +116,34 @@ export async function assertPositioningTestWritable(db: Db, testId: string): Pro
   }
 }
 
-export async function setPositioningTestState(db: Db, testId: string, state: WorkflowState) {
+export async function setPositioningTestState(
+  db: Db,
+  testId: string,
+  state: WorkflowState,
+  actorId?: string,
+) {
   await getPositioningTestState(db, testId); // 404 si absent
-  return db.positioningTest.update({ where: { id: testId }, data: { state } });
+  const previous = await db.positioningTest.findUnique({
+    where: { id: testId },
+    select: { state: true },
+  });
+  const updated = await db.positioningTest.update({ where: { id: testId }, data: { state } });
+
+  if (actorId && previous?.state !== state) {
+    await logAudit(db, {
+      actorId,
+      action: state === 'LOCKED' ? ACTION_POSITIONING_LOCKED : ACTION_POSITIONING_UNLOCKED,
+      entityType: 'PositioningTest',
+      entityId: testId,
+      oldValue: { state: previous?.state },
+      newValue: { state: updated.state },
+    });
+  }
+
+  return updated;
 }
 
-export const lockPositioningTest = (db: Db, id: string) =>
-  setPositioningTestState(db, id, 'LOCKED');
-export const unlockPositioningTest = (db: Db, id: string) =>
-  setPositioningTestState(db, id, 'OPEN');
+export const lockPositioningTest = (db: Db, id: string, actorId?: string) =>
+  setPositioningTestState(db, id, 'LOCKED', actorId);
+export const unlockPositioningTest = (db: Db, id: string, actorId?: string) =>
+  setPositioningTestState(db, id, 'OPEN', actorId);

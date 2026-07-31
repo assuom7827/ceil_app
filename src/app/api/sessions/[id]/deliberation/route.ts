@@ -16,12 +16,12 @@ export const GET = route<{ id: string }>(
  */
 export const PUT = route<{ id: string }>(
   { resource: 'DeliberationEntry', access: 'write' },
-  async ({ db, params, request }) => {
+  async ({ db, params, request, actor }) => {
     const { entries } = await readJson(request, deliberationBulkSchema);
 
     return withTransaction(db, async (tx) => {
       for (const { enrollmentId, ...values } of entries) {
-        await upsertDeliberationEntry(tx, params.id, enrollmentId, values);
+        await upsertDeliberationEntry(tx, params.id, enrollmentId, values, actor.id);
       }
       return { updated: entries.length };
     });

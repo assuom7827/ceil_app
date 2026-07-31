@@ -16,6 +16,7 @@ export const prisma = new PrismaClient();
 
 /** Tables vidées entre deux tests, dans l'ordre inverse des dépendances. */
 const TABLES_IN_DELETION_ORDER = [
+  'audit_logs',
   'deliberation_entries',
   'positioning_scores',
   'payment_receipts',
