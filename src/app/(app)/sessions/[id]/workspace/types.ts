@@ -54,6 +54,8 @@ export interface EnrollmentsPayload {
     title: string;
     admissionThreshold: number;
     matriculePrefix: string | null;
+    /** Niveaux du catalogue de la formation — filtrés côté serveur. */
+    levels: NamedRef[];
   };
   rows: EnrollmentRow[];
 }

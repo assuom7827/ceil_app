@@ -20,7 +20,13 @@ export const GET = route<{ id: string }>(
         academicYear: true,
         admissionThreshold: true,
         matriculePrefix: true,
-        training: { select: { frName: true, arName: true } },
+        training: {
+          select: {
+            frName: true,
+            arName: true,
+            levels: { select: { id: true, name: true }, orderBy: { sequence: 'asc' } },
+          },
+        },
         trainingLevel: { select: { name: true } },
       },
     });
@@ -60,6 +66,7 @@ export const GET = route<{ id: string }>(
         title: deriveSessionTitle(session),
         admissionThreshold: session.admissionThreshold,
         matriculePrefix: session.matriculePrefix,
+        levels: session.training.levels,
       },
       rows: enrollments.map((enrollment) => ({
         ...enrollment,
