@@ -24,6 +24,7 @@ export type Resource =
   | 'PositioningScore'
   | 'DeliberationEntry'
   | 'PaymentReceipt'
+  | 'AuditLog'
   | 'User';
 
 /** Rôles disposant du CRUD complet sur toutes les ressources. */
@@ -57,6 +58,7 @@ export function canManageSessions(role: Role): boolean {
 export function canRead(actor: Actor | null | undefined, resource: Resource): boolean {
   if (!actor) return false;
   if (ADMIN_ONLY_RESOURCES.includes(resource)) return actor.role === 'ADMIN';
+  if (resource === 'AuditLog') return hasFullAccess(actor.role);
   return true;
 }
 

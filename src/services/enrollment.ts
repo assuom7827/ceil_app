@@ -12,8 +12,14 @@ import { assertSessionWritable } from './locking';
 import { allocateEnrollmentRegistrationNumber } from './registration-numbers';
 import { allocateParticipantRegistrationNumber } from './registration-numbers';
 import type { ParticipantTypeLike } from './derive';
+import { logAudit } from './audit';
 
 export type EnrollmentKindLike = 'NEW' | 'RETURNING';
+
+export const ACTION_ENROLLMENT_CREATED = 'ENROLLMENT_CREATED';
+export const ACTION_ENROLLMENT_REMOVED = 'ENROLLMENT_REMOVED';
+export const ACTION_ENROLLMENT_GROUP_ASSIGNED = 'ENROLLMENT_GROUP_ASSIGNED';
+export const ACTION_PARTICIPANT_CREATED = 'PARTICIPANT_CREATED';
 
 export interface EnrollResult {
   /** Inscriptions créées par cet appel. */
@@ -28,6 +34,7 @@ export interface EnrollResult {
 export interface EnrollOptions {
   kind?: EnrollmentKindLike;
   responsible?: string | null;
+  actorId?: string;
 }
 
 /**
@@ -78,7 +85,7 @@ export async function enroll(
     const toCreate = uniqueIds.filter((id) => !alreadyEnrolled.has(id));
 
     for (const participantId of toCreate) {
-      await tx.enrollment.create({
+      const enrollment = await tx.enrollment.create({
         data: {
           participantId,
           trainingSessionId,
@@ -87,6 +94,21 @@ export async function enroll(
           registrationNumber: await allocateEnrollmentRegistrationNumber(tx, session),
         },
       });
+
+      if (options.actorId) {
+        await logAudit(tx, {
+          actorId: options.actorId,
+          action: ACTION_ENROLLMENT_CREATED,
+          entityType: 'Enrollment',
+          entityId: enrollment.id,
+          newValue: {
+            participantId: enrollment.participantId,
+            trainingSessionId: enrollment.trainingSessionId,
+            kind: enrollment.kind,
+            registrationNumber: enrollment.registrationNumber,
+          },
+        });
+      }
     }
 
     return {
@@ -165,10 +187,25 @@ export async function createAndEnroll(
 
   return withTransaction(db, async (tx) => {
     const participant = await createParticipant(tx, input);
+
+    if (options.actorId) {
+      await logAudit(tx, {
+        actorId: options.actorId,
+        action: ACTION_PARTICIPANT_CREATED,
+        entityType: 'Participant',
+        entityId: participant.id,
+        newValue: {
+          familyName: participant.familyName,
+          firstName: participant.firstName,
+          registrationNumber: participant.registrationNumber,
+        },
+      });
+    }
+
     const result = await enroll(tx, trainingSessionId, [participant.id], options);
     if (result.created !== 1) {
       // Impossible en pratique : le participant vient d'être créé.
-      throw conflictError('Le participant créé n’a pas pu être inscrit.', { participant });
+      throw conflictError('Le participant créé n\'a pas pu être inscrit.', { participant });
     }
     return { participant, enrollment: result };
   });
@@ -179,15 +216,30 @@ export async function createAndEnroll(
 // ---------------------------------------------------------------------------
 
 /** Retire une inscription. Refuse si la session est verrouillée (409). */
-export async function removeEnrollment(db: Db, enrollmentId: string): Promise<void> {
+export async function removeEnrollment(db: Db, enrollmentId: string, actorId?: string): Promise<void> {
   const enrollment = await db.enrollment.findUnique({
     where: { id: enrollmentId },
-    select: { trainingSessionId: true },
+    select: { trainingSessionId: true, participantId: true, registrationNumber: true },
   });
   if (!enrollment) {
     throw notFoundError('Inscription introuvable.', { enrollmentId });
   }
   await assertSessionWritable(db, enrollment.trainingSessionId);
+
+  if (actorId) {
+    await logAudit(db, {
+      actorId,
+      action: ACTION_ENROLLMENT_REMOVED,
+      entityType: 'Enrollment',
+      entityId: enrollmentId,
+      oldValue: {
+        participantId: enrollment.participantId,
+        trainingSessionId: enrollment.trainingSessionId,
+        registrationNumber: enrollment.registrationNumber,
+      },
+    });
+  }
+
   await db.enrollment.delete({ where: { id: enrollmentId } });
 }
 
@@ -198,6 +250,7 @@ export async function assignGroup(
   enrollmentIds: readonly string[],
   groupType: 'SESSION' | 'EXAM',
   groupId: string | null,
+  actorId?: string,
 ): Promise<{ updated: number }> {
   await assertSessionWritable(db, trainingSessionId);
 
@@ -211,10 +264,27 @@ export async function assignGroup(
     }
   }
 
+  const existing = await db.enrollment.findMany({
+    where: { id: { in: [...enrollmentIds] }, trainingSessionId },
+    select: { id: true, sessionGroupId: true, examGroupId: true },
+  });
+
   const { count } = await db.enrollment.updateMany({
     where: { id: { in: [...enrollmentIds] }, trainingSessionId },
     data: groupType === 'SESSION' ? { sessionGroupId: groupId } : { examGroupId: groupId },
   });
+
+  if (actorId && count > 0) {
+    const field = groupType === 'SESSION' ? 'sessionGroupId' : 'examGroupId';
+    await logAudit(db, {
+      actorId,
+      action: ACTION_ENROLLMENT_GROUP_ASSIGNED,
+      entityType: 'Enrollment',
+      entityId: enrollmentIds.join(','),
+      oldValue: existing.reduce((acc, e) => ({ ...acc, [e.id]: { [field]: e[field] } }), {}),
+      newValue: enrollmentIds.reduce((acc, id) => ({ ...acc, [id]: { [field]: groupId } }), {}),
+    });
+  }
 
   return { updated: count };
 }

@@ -3,5 +3,5 @@ import { lockPositioningTest } from '@/services/locking';
 
 export const POST = route<{ id: string }>(
   { resource: 'PositioningTest', access: 'write' },
-  ({ db, params }) => lockPositioningTest(db, params.id),
+  ({ db, params, actor }) => lockPositioningTest(db, params.id, actor.id),
 );

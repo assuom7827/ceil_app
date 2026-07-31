@@ -9,6 +9,9 @@ import type { Db } from './db';
 import { deriveEntryTotalAndStatus, type AdmissionStatus } from './derive';
 import { notFoundError } from './errors';
 import { assertSessionWritable } from './locking';
+import { logAudit } from './audit';
+
+export const ACTION_DELIBERATION_SCORE_UPSERTED = 'DELIBERATION_SCORE_UPSERTED';
 
 export interface AdmissionSummary {
   admitted: number;
@@ -147,6 +150,7 @@ export async function upsertDeliberationEntry(
   trainingSessionId: string,
   enrollmentId: string,
   values: DeliberationScoreInput,
+  actorId?: string,
 ) {
   await assertSessionWritable(db, trainingSessionId);
 
@@ -161,11 +165,46 @@ export async function upsertDeliberationEntry(
     });
   }
 
-  return db.deliberationEntry.upsert({
+  const previous = await db.deliberationEntry.findUnique({
+    where: { enrollmentId },
+    select: {
+      oralExpression: true,
+      writtenExpression: true,
+      oralComprehension: true,
+      writtenComprehension: true,
+    },
+  });
+
+  const updated = await db.deliberationEntry.upsert({
     where: { enrollmentId },
     update: values,
     create: { enrollmentId, ...values },
   });
+
+  if (actorId) {
+    await logAudit(db, {
+      actorId,
+      action: ACTION_DELIBERATION_SCORE_UPSERTED,
+      entityType: 'DeliberationEntry',
+      entityId: updated.id,
+      oldValue: previous
+        ? {
+            oralExpression: previous.oralExpression,
+            writtenExpression: previous.writtenExpression,
+            oralComprehension: previous.oralComprehension,
+            writtenComprehension: previous.writtenComprehension,
+          }
+        : null,
+      newValue: {
+        oralExpression: updated.oralExpression,
+        writtenExpression: updated.writtenExpression,
+        oralComprehension: updated.oralComprehension,
+        writtenComprehension: updated.writtenComprehension,
+      },
+    });
+  }
+
+  return updated;
 }
 
 /** Inscriptions admises d'une session — source des diplômes. */
