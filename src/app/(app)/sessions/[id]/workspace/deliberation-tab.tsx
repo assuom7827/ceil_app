@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Calculator, Save } from 'lucide-react';
+import { Calculator, ExternalLink, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
@@ -176,10 +176,30 @@ export function DeliberationTab({
           );
         },
       },
+      {
+        key: 'printCertificate',
+        header: '',
+        kind: 'computed',
+        get: () => '',
+        align: 'end',
+        render: (row) => {
+          const { status } = computed(row);
+          if (status !== 'ADMITTED') return null;
+          const href = `/api/sessions/${sessionId}/certificates?enrollmentId=${row.enrollmentId}`;
+          return (
+            <Button asChild variant="ghost" size="sm">
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                <ExternalLink />
+                Attestation
+              </a>
+            </Button>
+          );
+        },
+      },
     );
 
     return definitions;
-  }, [computed, drafts]);
+  }, [computed, drafts, sessionId]);
 
   async function saveAll() {
     if (!payload || dirty.size === 0) return;
