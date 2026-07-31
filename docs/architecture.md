@@ -120,6 +120,27 @@ répondant à un défaut mesuré :
 Le collage TSV depuis Excel remplit vers la droite et vers le bas en sautant les
 colonnes calculées ; la navigation clavier suit l'ordre naturel du tableau.
 
+## Gabarits ODT
+
+L'attestation de réussite n'a pas de mise en page dans le code : c'est un `.odt`
+téléversé ([D-26](./decisions.md#d-26)). Deux couches, séparées exprès :
+
+- `odt.ts` est **pur** — ni Prisma, ni système de fichiers, ni processus externe.
+  Tout s'y teste sans base et sans LibreOffice : repères coupés par des balises,
+  échappement XML, répétition du corps page par page.
+- `odt-render.ts` isole l'appel à LibreOffice. C'est le seul endroit du dépôt qui
+  lance un processus externe, et le seul à connaître `soffice`.
+
+Deux propriétés du format, apprises en le testant, sont vérifiées à l'entrée :
+`mimetype` doit rester la première entrée non compressée de l'archive, et
+`META-INF/manifest.xml` doit exister — sans lui, LibreOffice rend la main sans
+produire de PDF ni d'erreur.
+
+Le remplissage d'un lot **répète le corps** de `content.xml`, une copie par
+personne, séparées par un paragraphe de saut de page. `styles.xml` n'est pas
+répété : en-têtes et pieds de page sont communs à toutes les pages, donc remplis
+avec les valeurs du premier destinataire.
+
 ## Impression
 
 Les documents sont du HTML mis en page en A4 (`.print-sheet`), avec blocs RTL,

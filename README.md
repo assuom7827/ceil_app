@@ -10,23 +10,24 @@ attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
 > **État actuel : les 10 étapes sont terminées.** Le cycle métier est couvert de
 > l'inscription aux documents officiels, et vérifié de bout en bout dans un vrai
-> navigateur. 262 tests unitaires et d'intégration, 44 tests e2e.
+> navigateur. 300 tests unitaires et d'intégration, 51 tests e2e.
 > Détail et points ouverts : [`docs/etat-du-projet.md`](./docs/etat-du-projet.md).
 
 ---
 
 ## Documentation
 
-| Fichier                                              | Contenu                                                      |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| **Ce fichier**                                       | Le produit : démarrage, API, écrans, documents officiels     |
-| [`CLAUDE.md`](./CLAUDE.md)                           | **Reprendre le projet** — conventions, règles, pièges connus |
-| [`docs/architecture.md`](./docs/architecture.md)     | Organisation du code et contrats internes                    |
-| [`docs/decisions.md`](./docs/decisions.md)           | Pourquoi le code est ainsi — journal daté                    |
-| [`docs/etat-du-projet.md`](./docs/etat-du-projet.md) | Reste à faire, questions ouvertes, limites connues           |
-| [`docs/exploitation.md`](./docs/exploitation.md)     | Déploiement, reprise de données, sauvegardes                 |
-| [`docs/import-excel.md`](./docs/import-excel.md)     | Format des imports, pour les utilisateurs                    |
-| [`CHANGELOG.md`](./CHANGELOG.md)                     | Historique des livraisons                                    |
+| Fichier                                                      | Contenu                                                      |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Ce fichier**                                               | Le produit : démarrage, API, écrans, documents officiels     |
+| [`CLAUDE.md`](./CLAUDE.md)                                   | **Reprendre le projet** — conventions, règles, pièges connus |
+| [`docs/architecture.md`](./docs/architecture.md)             | Organisation du code et contrats internes                    |
+| [`docs/decisions.md`](./docs/decisions.md)                   | Pourquoi le code est ainsi — journal daté                    |
+| [`docs/etat-du-projet.md`](./docs/etat-du-projet.md)         | Reste à faire, questions ouvertes, limites connues           |
+| [`docs/exploitation.md`](./docs/exploitation.md)             | Déploiement, reprise de données, sauvegardes                 |
+| [`docs/import-excel.md`](./docs/import-excel.md)             | Format des imports, pour les utilisateurs                    |
+| [`docs/modele-attestation.md`](./docs/modele-attestation.md) | Gabarit d'attestation dans LibreOffice                       |
+| [`CHANGELOG.md`](./CHANGELOG.md)                             | Historique des livraisons                                    |
 
 ---
 
@@ -34,6 +35,8 @@ attestations, PV). Interface **bilingue français / arabe** avec RTL.
 
 - Node.js ≥ 20.11 (testé sur Node 22)
 - Docker et Docker Compose (pour PostgreSQL)
+- LibreOffice Writer (`libreoffice-writer`) — **uniquement** pour éditer les
+  attestations de réussite en PDF ; le reste fonctionne sans lui
 
 ## Démarrage
 
@@ -91,6 +94,7 @@ courant mais reste en **lecture seule** sur `Training`, `TrainingLevel` et
 | `npm run db:studio`           | Prisma Studio                            |
 | `npm run db:reset`            | Réinitialisation complète de la base     |
 | `npm run docs:template`       | Régénère le modèle d'import Excel        |
+| `npm run docs:attestation`    | Régénère le gabarit d'attestation ODT    |
 
 ## Stack
 
@@ -101,7 +105,7 @@ courant mais reste en **lecture seule** sur `Training`, `TrainingLevel` et
 | Authentification  | NextAuth (Auth.js v5), credentials + JWT, RBAC serveur          |
 | UI                | Tailwind CSS 3 + shadcn/ui (Radix), lucide-react                |
 | Grilles éditables | TanStack Table (édition inline, collage Excel)                  |
-| Import / export   | `xlsx` et `papaparse`                                           |
+| Import / export   | `xlsx` (imports), `fflate` + LibreOffice (gabarits ODT → PDF)   |
 | i18n              | next-intl — `fr` par défaut, `ar` en RTL (cookie `NEXT_LOCALE`) |
 | Validation        | Zod, schémas partagés client / serveur                          |
 | Tests             | Vitest (unitaires), Playwright (e2e)                            |
@@ -114,11 +118,11 @@ ceil_app/
 ├── components.json            # configuration shadcn/ui
 ├── CLAUDE.md                  # point d'entrée pour reprendre le projet
 ├── docs/                      # architecture, décisions, état, exploitation
-├── scripts/                   # génération du modèle d'import
+├── scripts/                   # modèles d'import Excel et de gabarit ODT
 ├── types/                     # augmentations de types (NextAuth)
 ├── prisma/
 │   ├── schema.prisma          # modèle normalisé complet
-│   ├── migrations/            # 3 migrations
+│   ├── migrations/            # 4 migrations
 │   └── seed.ts                # seed reproductible
 ├── src/
 │   ├── app/
@@ -126,7 +130,7 @@ ceil_app/
 │   │   ├── globals.css        # thème + styles d'impression A4
 │   │   ├── (auth)/login/      # connexion (public)
 │   │   ├── (app)/             # pages authentifiées : garde + shell
-│   │   └── api/               # 51 route handlers
+│   │   └── api/               # 54 route handlers
 │   ├── middleware.ts          # expose le chemin demandé (aucune auth)
 │   ├── auth.ts                # configuration NextAuth (credentials)
 │   ├── components/            # primitives shadcn/ui + shell applicatif
@@ -260,42 +264,46 @@ Réponse : `{ data, meta: { page, perPage, total, totalPages } }`.
 
 ### Actions
 
-| Méthode et route                                              | Effet                                                                              |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `POST /api/sessions/{id}/lock` · `/unlock`                    | Gèle ou rouvre la session                                                          |
-| `POST /api/sessions/{id}/enroll`                              | Inscription simplifiée : sélection **et** créations à la volée, en une transaction |
-| `GET /api/sessions/{id}/enrollments`                          | Grille des inscrits, `fullName` dérivé                                             |
-| `POST /api/sessions/{id}/import-enrollments`                  | Import Excel/CSV avec rapport                                                      |
-| `POST /api/sessions/{id}/assign-group`                        | Affectation de groupe en masse                                                     |
-| `GET /api/sessions/{id}/deliberation`                         | Lignes avec `total` et `status` **dérivés**                                        |
-| `PUT /api/sessions/{id}/deliberation`                         | Enregistrement en masse depuis la grille                                           |
-| `POST /api/sessions/{id}/deliberation/import-scores`          | Import des 4 notes                                                                 |
-| `POST /api/sessions/{id}/deliberation/recompute`              | Renvoie admis / ajournés / non délibérés                                           |
-| `POST /api/sessions/{id}/groups/organize?type=SESSION\|EXAM`  | Instancie les gabarits                                                             |
-| `POST /api/sessions/{id}/groups/organize-by-level`            | Ouvre les groupes par niveau, dimensionnés sur l'effectif                          |
-| `POST /api/sessions/{id}/groups/assign-by-level`              | Range chaque inscrit dans un groupe de son niveau                                  |
-| `POST /api/sessions/{id}/groups/assign-exam`                  | Remplit les salles d'examen                                                        |
-| `GET` · `PUT /api/positioning-tests/{id}/scores`              | Grille du positionnement, `total` et niveau résolu dérivés                         |
-| `POST /api/positioning-tests/{id}/resolve-levels`             | Applique les niveaux résolus                                                       |
-| `POST /api/positioning-tests/{id}/import-scores`              | Import des 2 notes écrites                                                         |
-| `POST /api/positioning-tests/{id}/lock` · `/unlock`           | Gèle ou rouvre le test                                                             |
-| `PATCH` · `DELETE /api/enrollments/{id}`                      | Édition inline, retrait                                                            |
-| `POST /api/payment-receipts/{id}/confirm` · `/reset-to-draft` | Cycle du reçu                                                                      |
-| `GET /api/dashboard/stats`                                    | KPIs, admis **calculés** et non lus                                                |
+| Méthode et route                                              | Effet                                                                                           |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `POST /api/sessions/{id}/lock` · `/unlock`                    | Gèle ou rouvre la session                                                                       |
+| `POST /api/sessions/{id}/enroll`                              | Inscription simplifiée : sélection **et** créations à la volée, en une transaction              |
+| `GET /api/sessions/{id}/enrollments`                          | Grille des inscrits, `fullName` dérivé                                                          |
+| `POST /api/sessions/{id}/import-enrollments`                  | Import Excel/CSV avec rapport                                                                   |
+| `POST /api/sessions/{id}/assign-group`                        | Affectation de groupe en masse                                                                  |
+| `GET /api/sessions/{id}/deliberation`                         | Lignes avec `total` et `status` **dérivés**                                                     |
+| `PUT /api/sessions/{id}/deliberation`                         | Enregistrement en masse depuis la grille                                                        |
+| `POST /api/sessions/{id}/deliberation/import-scores`          | Import des 4 notes                                                                              |
+| `POST /api/sessions/{id}/deliberation/recompute`              | Renvoie admis / ajournés / non délibérés                                                        |
+| `POST /api/sessions/{id}/groups/organize?type=SESSION\|EXAM`  | Instancie les gabarits                                                                          |
+| `POST /api/sessions/{id}/groups/organize-by-level`            | Ouvre les groupes par niveau, dimensionnés sur l'effectif                                       |
+| `POST /api/sessions/{id}/groups/assign-by-level`              | Range chaque inscrit dans un groupe de son niveau                                               |
+| `POST /api/sessions/{id}/groups/assign-exam`                  | Remplit les salles d'examen                                                                     |
+| `GET` · `PUT /api/positioning-tests/{id}/scores`              | Grille du positionnement, `total` et niveau résolu dérivés                                      |
+| `POST /api/positioning-tests/{id}/resolve-levels`             | Applique les niveaux résolus                                                                    |
+| `POST /api/positioning-tests/{id}/import-scores`              | Import des 2 notes écrites                                                                      |
+| `POST /api/positioning-tests/{id}/lock` · `/unlock`           | Gèle ou rouvre le test                                                                          |
+| `PATCH` · `DELETE /api/enrollments/{id}`                      | Édition inline, retrait                                                                         |
+| `POST /api/payment-receipts/{id}/confirm` · `/reset-to-draft` | Cycle du reçu                                                                                   |
+| `GET /api/dashboard/stats`                                    | KPIs, admis **calculés** et non lus                                                             |
+| `GET /api/sessions/{id}/certificates`                         | Attestations de réussite en PDF ; `?enrollmentId=` pour une seule, `?format=odt` pour retoucher |
+| `POST` · `GET` · `DELETE /api/diploma-models/{id}/template`   | Gabarit ODT : téléverser, télécharger, retirer                                                  |
+| `GET /api/diploma-models/{id}/template/placeholders`          | Repères présents dans le gabarit, relus depuis le fichier                                       |
 
 ### Erreurs
 
 Une forme unique, produite par un wrapper unique : `{ error, message, details? }`.
 
-| Statut | `error`        | Cas                                                     |
-| ------ | -------------- | ------------------------------------------------------- |
-| 400    | `VALIDATION`   | Zod ; `details` liste `{ path, message }` par champ     |
-| 401    | `UNAUTHORIZED` | Session absente                                         |
-| 403    | `FORBIDDEN`    | Rôle insuffisant ; `details` donne ressource et rôle    |
-| 404    | `NOT_FOUND`    | Entité absente                                          |
-| 409    | `LOCKED`       | Session ou test verrouillé                              |
-| 409    | `CONFLICT`     | Doublon (unicité) ou référence empêchant la suppression |
-| 500    | `INTERNAL`     | Journalisé côté serveur, jamais détaillé au client      |
+| Statut | `error`        | Cas                                                               |
+| ------ | -------------- | ----------------------------------------------------------------- |
+| 400    | `VALIDATION`   | Zod ; `details` liste `{ path, message }` par champ               |
+| 401    | `UNAUTHORIZED` | Session absente                                                   |
+| 403    | `FORBIDDEN`    | Rôle insuffisant ; `details` donne ressource et rôle              |
+| 404    | `NOT_FOUND`    | Entité absente                                                    |
+| 409    | `LOCKED`       | Session ou test verrouillé                                        |
+| 409    | `CONFLICT`     | Doublon (unicité) ou référence empêchant la suppression           |
+| 503    | `DEPENDENCY`   | LibreOffice absent, bloqué ou en échec ; `details.reason` précise |
+| 500    | `INTERNAL`     | Journalisé côté serveur, jamais détaillé au client                |
 
 Les erreurs Prisma sont traduites plutôt que remontées brutes : `P2002` devient
 un 409 lisible, `P2025` un 404, `P2003` un 409 explicite sur la référence.
@@ -330,7 +338,7 @@ en onglets, sans quitter la page.
 | **Positionnement**       | Saisie E.E / C.E, colonnes `total` et `niveau résolu` calculées en direct, « Déterminer les niveaux », import                         |
 | **Notes / Délibération** | Saisie des 4 compétences, `total` et `statut` en direct selon le seuil de la session, « Recalculer les résultats », import            |
 | **Groupes**              | Ouverture des groupes par niveau dimensionnés sur l'effectif, répartition, salles d'examen                                            |
-| **Documents**            | Procès-verbal, diplômes, attestations et listes d'émargement, imprimables en A4                                                       |
+| **Documents**            | Procès-verbal, diplômes, listes d'émargement en A4, et **attestations de réussite en PDF** depuis le gabarit LibreOffice              |
 
 L'en-tête reste visible en permanence : titre dérivé, seuil d'admission
 modifiable, état `OPEN`/`LOCKED` avec bouton de verrouillage, et compteurs
@@ -395,6 +403,24 @@ travail, ou par URL directe.
 | Diplômes                      | `/print/sessions/{id}/diplomas`     | **Uniquement les admis** ; `?enrollmentId=` pour un seul |
 | Attestations                  | `/print/sessions/{id}/attestations` | Toute inscription, admise ou non                         |
 | Liste d'émargement            | `/print/sessions/{id}/list`         | `?groupId=` pour un groupe, sinon toute la session       |
+
+### Attestation de réussite : gabarit téléversable
+
+Sa mise en page **n'est pas dans le code**. L'administration prépare un `.odt`
+dans LibreOffice Writer — logos, cadre, signature, mentions — y place des repères
+`{{nomCompletArabe}}`, `{{niveau}}`, `{{sessionArabe}}`…, et le téléverse depuis
+_Référentiels → Modèles de diplôme_. Le changer ne demande aucune livraison.
+
+L'application remplit les repères et confie la conversion PDF à LibreOffice :
+une page par admis, un seul fichier. Le format de page — A4 paysage — vient du
+gabarit, pas de l'application.
+
+**Mode d'emploi et liste des repères :
+[`docs/modele-attestation.md`](./docs/modele-attestation.md).**
+
+```bash
+npm run docs:attestation   # → docs/modele-attestation.odt, gabarit de départ
+```
 
 ### Bilinguisme
 

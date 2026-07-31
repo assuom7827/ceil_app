@@ -13,7 +13,8 @@ export type ServiceErrorCode =
   | 'NOT_FOUND'
   | 'LOCKED'
   | 'CONFLICT'
-  | 'UNPROCESSABLE';
+  | 'UNPROCESSABLE'
+  | 'DEPENDENCY';
 
 const STATUS_BY_CODE: Record<ServiceErrorCode, number> = {
   VALIDATION: 400,
@@ -24,6 +25,12 @@ const STATUS_BY_CODE: Record<ServiceErrorCode, number> = {
   LOCKED: 409,
   CONFLICT: 409,
   UNPROCESSABLE: 422,
+  /**
+   * Une dépendance externe (LibreOffice) manque ou refuse de répondre. 503 et
+   * non 500 : l'application est saine, c'est son environnement qui ne l'est pas,
+   * et le geste correctif est du côté du serveur.
+   */
+  DEPENDENCY: 503,
 };
 
 export class ServiceError extends Error {
@@ -65,3 +72,7 @@ export const conflictError = (message: string, details?: unknown) =>
 
 export const unprocessableError = (message: string, details?: unknown) =>
   new ServiceError('UNPROCESSABLE', message, details);
+
+/** 503 — dépendance système indisponible ; `details.reason` dit laquelle et pourquoi. */
+export const dependencyError = (message: string, details?: unknown) =>
+  new ServiceError('DEPENDENCY', message, details);

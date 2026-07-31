@@ -84,6 +84,14 @@ export const diplomaModelCrud: CrudConfig<Record<string, unknown>> = {
   sortable: ['name', 'createdAt'],
   defaultOrderBy: { name: 'asc' },
   /**
+   * Métadonnées du gabarit, SANS son contenu : le fichier ODT ne doit jamais
+   * traverser une réponse de liste, où il serait sérialisé en base64 pour chaque
+   * modèle. Il se télécharge par sa route dédiée.
+   */
+  include: {
+    templates: { select: { id: true, kind: true, fileName: true, updatedAt: true } },
+  },
+  /**
    * Deux invariants, impossibles à exprimer en contrainte de base :
    *   — au plus UN modèle par défaut actif ;
    *   — un modèle désactivé ne peut pas rester le modèle par défaut.

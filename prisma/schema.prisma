@@ -53,6 +53,15 @@ enum Gender {
   MAN
 }
 
+/// Type de document couvert par un gabarit ODT.
+///
+/// Un seul type aujourd'hui : l'attestation de réussite. Les autres documents
+/// (procès-verbal, listes d'émargement) restent des pages HTML générées, leur
+/// mise en page étant tabulaire et non protocolaire.
+enum DocumentTemplateKind {
+  CERTIFICATE
+}
+
 /// État de verrouillage, partagé par TrainingSession et PositioningTest.
 enum WorkflowState {
   OPEN
@@ -199,10 +208,38 @@ model DiplomaModel {
 
   sessions         TrainingSession[]
   positioningTests PositioningTest[]
+  templates        DocumentTemplate[]
 
   @@index([isDefault])
   @@index([disabled])
   @@map("diploma_models")
+}
+
+/// Gabarit ODT téléversé par l'administration, rempli à la génération.
+///
+/// Le fichier vit EN BASE et non sur un volume : une sauvegarde `pg_dump` suffit
+/// alors à restaurer les documents officiels, et un déploiement sans stockage
+/// partagé reste possible.
+///
+/// Dérivés (non stockés) : taille du fichier et liste des repères `{{…}}`, tous
+/// deux relus depuis `content` à la demande.
+model DocumentTemplate {
+  id       String               @id @default(cuid())
+  kind     DocumentTemplateKind @default(CERTIFICATE)
+  /// Nom d'origine, pour que l'administration retrouve son fichier.
+  fileName String
+  /// Archive ODT complète.
+  content  Bytes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  diplomaModelId String
+  diplomaModel   DiplomaModel @relation(fields: [diplomaModelId], references: [id], onDelete: Cascade)
+
+  /// Un seul gabarit par type et par modèle.
+  @@unique([diplomaModelId, kind])
+  @@map("document_templates")
 }
 
 // ============================================================================
