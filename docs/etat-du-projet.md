@@ -62,8 +62,10 @@ L'hypothèse retenue est celle qui casse le moins si elle est fausse.
   n'est pas fait.
 - **Un seul type de gabarit** : seule l'attestation de réussite est téléversable.
   Le procès-verbal et les listes restent des pages HTML.
-- **Identité visuelle** : couleurs et logo de l'université ne sont pas intégrés.
-  L'habillage actuel est volontairement neutre ([D-19](./decisions.md#d-19)).
+- **Identité visuelle** : les couleurs de l'université (bleu #1e73be, blanc, accents rouge/vert)
+  sont intégrées dans le thème Tailwind et les CSS custom properties. Le logo SVG est placé
+  dans le header et les favicônes sont configurés. Les documents utilisent les champs
+  `universityLogo` et `heading` du modèle de diplôme. ([D-19](./decisions.md#d-19))
 - **Aucun export Excel** : les imports existent, l'export non. Les listes
   s'impriment (A4) mais ne se téléchargent pas en classeur.
 - **`papaparse` est déclaré mais inutilisé** : `xlsx` lit aussi bien les CSV.
@@ -92,12 +94,11 @@ Par ordre de valeur perçue, aucune n'étant engagée :
    de réussite ne dépend plus du code.
 2. **Numéro de registre des attestations**, si le CEIL confirme qu'il diffère du
    matricule d'inscription.
-3. **Identité visuelle du CEIL** (logo, couleurs de l'université).
-4. **Bouton « Télécharger le modèle »** à côté de chaque import : le classeur
+3. **Bouton « Télécharger le modèle »** à côté de chaque import : le classeur
    d'exemple existe déjà, il n'est pas atteignable depuis l'application.
-5. **Export Excel** des listes et du procès-verbal.
-6. **Trace d'audit** sur les notes et les décisions d'admission.
-7. **Mise à jour en masse** des inscriptions, et recherche asynchrone des
+4. **Export Excel** des listes et du procès-verbal.
+5. **Trace d'audit** sur les notes et les décisions d'admission.
+6. **Mise à jour en masse** des inscriptions, et recherche asynchrone des
    participants.
-8. **Spécialisation des specs e2e** : chacune créant sa propre session, comme le
+7. **Spécialisation des specs e2e** : chacune créant sa propre session, comme le
    fait déjà `documents.spec.ts`.

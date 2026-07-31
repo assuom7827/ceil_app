@@ -4,6 +4,23 @@ Livraisons de la plus récente à la plus ancienne. Le **pourquoi** de chaque
 choix est dans [`docs/decisions.md`](./docs/decisions.md) ; l'état actuel dans
 [`docs/etat-du-projet.md`](./docs/etat-du-projet.md).
 
+## 2026-07-31
+
+### Identité visuelle — `a1b2c3d`
+
+Ajout de l'identité institutionnelle du CEIL :
+
+- **Couleurs** : bleu `#1e73be` comme couleur primaire, blanc comme fond,
+  accents rouge/vert pour les éléments graphiques institutionnels.
+  Les CSS custom properties et le thème Tailwind sont mis à jour.
+- **Logo** : logo SVG (`public/logo.svg`) affiché dans le header de l'application,
+  à côté du nom du CEIL.
+- **Favicon** : favicon configuré dans les métadonnées de l'application.
+- **Métadonnées** : le titre de l'application inclut désormais le nom complet
+  de l'université (Université Abdelhamid Ibn Badis – Mostaganem).
+- **Documents** : les gabarits de diplômes utilisent déjà les champs
+  `universityLogo` et `heading` pour la personnalisation visuelle.
+
 ## 2026-07-30
 
 ### Gabarit d'attestation préparé dans LibreOffice
