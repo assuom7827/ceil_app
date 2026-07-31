@@ -1,0 +1,12 @@
+# /etc/systemd/system/ceil-backup.service
+[Unit]
+Description=CEIL PostgreSQL backup
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=ceil
+Group=ceil
+Environment="DATABASE_URL=postgresql://ceil:ceil@127.0.0.1:5432/ceil?schema=public"
+EnvironmentFile=-/home/ceil/ceil_app/.env
+ExecStart=/home/ceil/ceil_app/scripts/backup.sh --dir /srv/ceil/backups --retention 14

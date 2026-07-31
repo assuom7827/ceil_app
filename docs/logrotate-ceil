@@ -1,0 +1,38 @@
+# CEIL — rotation des logs applicatives
+#
+# Installeur : copier vers /etc/logrotate.d/ceil
+# Nécessite : l'application écrit ses logs dans un fichier, pas seulement stdout.
+#             Configurer la redirection dans le service systemd ou le runner.
+
+# Next.js écrit par défaut sur stdout/stderr. Pour que logrotate voie un fichier,
+# deux options :
+#   1. Utiliser `tee` ou `>> /var/log/ceil/app.log 2>&1` dans la commande de
+#      démarrage du service systemd.
+#   2. Utiliser un logger fichier (pino, bunyan) avec rotation intégrée.
+#
+# Ce fichier couvre l'option 1, la plus simple.
+
+/var/log/ceil/*.log {
+  daily
+  rotate 14
+  maxsize 100M
+  compress
+  delaycompress
+  missingok
+  notifempty
+  copytruncate
+  dateext
+  dateformat -%Y%m%d
+  su ceil ceil
+
+  # Le fichier de logs doit être lisible par l'utilisateur ceil,
+  # mais pas par le monde : permissions restrictives.
+  create 0640 ceil ceil
+}
+
+# ---------------------------------------------------------------------------
+# Si vous utilisez un logger structuré (pino-pretty, etc.), adapter le chemin
+# ci-dessus. Si vous utilisez la rotation native du logger, ce fichier n'est
+# pas nécessaire — supprimer le symlink logrotate pour éviter la double
+# rotation.
+# ---------------------------------------------------------------------------

@@ -27,6 +27,11 @@ attestations, PV). Interface **bilingue français / arabe** avec RTL.
 | [`docs/exploitation.md`](./docs/exploitation.md)             | Déploiement, reprise de données, sauvegardes                 |
 | [`docs/import-excel.md`](./docs/import-excel.md)             | Format des imports, pour les utilisateurs                    |
 | [`docs/modele-attestation.md`](./docs/modele-attestation.md) | Gabarit d'attestation dans LibreOffice                       |
+| [`docs/reverse-proxy-nginx.md`](./docs/reverse-proxy-nginx.md) | Configuration nginx recommandée                            |
+| [`docs/reverse-proxy-caddy.md`](./docs/reverse-proxy-caddy.md) | Configuration Caddy recommandée                            |
+| [`docs/systemd/ceil-backup.service`](./docs/systemd/ceil-backup.service) | Service systemd pour les sauvegardes                |
+| [`docs/systemd/ceil-backup.timer`](./docs/systemd/ceil-backup.timer) | Timer systemd pour les sauvegardes quotidiennes       |
+| [`docs/logrotate-ceil`](./docs/logrotate-ceil)               | Rotation des logs applicatives                               |
 | [`CHANGELOG.md`](./CHANGELOG.md)                             | Historique des livraisons                                    |
 
 ---
@@ -363,6 +368,17 @@ Une forme unique, produite par un wrapper unique : `{ error, message, details? }
 | 409    | `CONFLICT`     | Doublon (unicité) ou référence empêchant la suppression           |
 | 503    | `DEPENDENCY`   | LibreOffice absent, bloqué ou en échec ; `details.reason` précise |
 | 500    | `INTERNAL`     | Journalisé côté serveur, jamais détaillé au client                |
+
+### Health check
+
+| Endpoint                   | Usage                    |
+| -------------------------- | ------------------------ |
+| `GET /api/health`          | Liveness — toujours 200  |
+| `GET /api/health?probe=readiness` | Readiness — base vérifiée |
+| `GET /api/health?probe=full` | Diagnostic complet (ajoute LibreOffice) |
+
+Le statut est `200` pour `ok`, `503` pour `degraded` (ex. LibreOffice absent),
+`500` pour `error` (ex. base inaccessible).
 
 Les erreurs Prisma sont traduites plutôt que remontées brutes : `P2002` devient
 un 409 lisible, `P2025` un 404, `P2003` un 409 explicite sur la référence.

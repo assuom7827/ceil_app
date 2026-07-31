@@ -23,7 +23,8 @@
     "db:reset": "prisma migrate reset --force",
     "lint:fix": "eslint . --fix",
     "docs:template": "tsx scripts/generate-import-template.mts",
-    "docs:attestation": "tsx scripts/generate-certificate-template.mts"
+    "docs:attestation": "tsx scripts/generate-certificate-template.mts",
+    "backup": "bash scripts/backup.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
