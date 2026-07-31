@@ -51,6 +51,7 @@ export interface DocumentPerson {
   birthPlace: string | null;
   arabicBirthPlace: string | null;
   levelName: string | null;
+  levelId: string | null;
   groupName: string | null;
   scores: {
     oralExpression: number | null;
@@ -166,6 +167,7 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
       birthPlace: participant?.birthPlace ?? null,
       arabicBirthPlace: participant?.arabBirthPlace ?? null,
       levelName: row.assignedLevel?.name ?? null,
+      levelId: row.assignedLevel?.id ?? null,
       groupName: row.sessionGroup?.name ?? null,
       scores: {
         oralExpression: row.oralExpression,
@@ -184,16 +186,24 @@ export interface SessionDocument {
   people: DocumentPerson[];
 }
 
-/** Procès-verbal : toutes les inscriptions, notées ou non. */
+/** Procès-verbal : toutes les inscriptions, notées ou non — ou un niveau filtré. */
 export async function getMinutesDocument(
   db: Db,
   trainingSessionId: string,
+  levelId?: string | null,
 ): Promise<SessionDocument> {
   const [header, people] = await Promise.all([
     loadHeader(db, trainingSessionId),
     loadPeople(db, trainingSessionId),
   ]);
-  return { header, people };
+
+  const filtered = levelId
+    ? people.filter((person) => person.levelId === levelId)
+    : people;
+
+  filtered.sort((a, b) => a.fullName.localeCompare(b.fullName, undefined, { numeric: true }));
+
+  return { header, people: filtered };
 }
 
 /**

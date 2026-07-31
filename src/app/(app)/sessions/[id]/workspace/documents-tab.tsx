@@ -21,6 +21,7 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
   const [groups, setGroups] = React.useState<GroupRow[] | null>(null);
   const [admission, setAdmission] = React.useState<AdmissionSummary | null>(null);
   const [groupId, setGroupId] = React.useState('');
+  const [levelId, setLevelId] = React.useState('');
 
   React.useEffect(() => {
     void (async () => {
@@ -35,6 +36,19 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
     })();
   }, [sessionId]);
 
+  const levelOptions = React.useMemo(() => {
+    if (!groups) return [];
+    const seen = new Map<string, string>();
+    for (const group of groups) {
+      if (group.trainingLevel && !seen.has(group.trainingLevel.id)) {
+        seen.set(group.trainingLevel.id, group.trainingLevel.name);
+      }
+    }
+    return Array.from(seen.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  }, [groups]);
+
   if (!groups) {
     return (
       <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -44,12 +58,6 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
   }
 
   const documents: DocumentLink[] = [
-    {
-      href: `/print/sessions/${sessionId}/minutes`,
-      label: 'Procès-verbal de délibération',
-      description: `Tableau des notes des ${admission?.total ?? 0} inscrit(s), paginé et signé.`,
-      icon: <ScrollText className="size-4" />,
-    },
     {
       href: `/print/sessions/${sessionId}/attestations`,
       label: 'Attestations d’inscription',
@@ -63,6 +71,8 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
   const certificatesHref = `/api/sessions/${sessionId}/certificates`;
   const noAdmitted = admission && admission.admitted === 0;
 
+  const minutesHref = `/print/sessions/${sessionId}/minutes${levelId ? `?levelId=${levelId}` : ''}`;
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -71,6 +81,44 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
       </p>
 
       <ul className="grid gap-3 sm:grid-cols-2">
+        <li className="rounded-md border p-4">
+          <p className="flex items-center gap-2 font-medium">
+            <ScrollText className="size-4" />
+            Procès-verbal de délibération
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tableau des notes des {admission?.total ?? 0} inscrit(s), paginé et signé.
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="pv-level" className="text-xs text-muted-foreground">
+                Niveau (optionnel)
+              </Label>
+              <select
+                id="pv-level"
+                value={levelId}
+                onChange={(event) => setLevelId(event.target.value)}
+                className="h-9 w-48 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="">Tous les niveaux</option>
+                {levelOptions.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button asChild variant="outline" size="sm">
+              <a href={minutesHref} target="_blank" rel="noopener noreferrer">
+                <ExternalLink />
+                Ouvrir
+              </a>
+            </Button>
+          </div>
+        </li>
+
         {documents.map((document) => (
           <li key={document.href} className="rounded-md border p-4">
             <p className="flex items-center gap-2 font-medium">

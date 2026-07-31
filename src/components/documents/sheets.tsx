@@ -43,11 +43,11 @@ function OfficialHeader({ header }: { header: DocumentHeader }) {
   );
 }
 
-function SessionLine({ header }: { header: DocumentHeader }) {
+function SessionLine({ header, levelName }: { header: DocumentHeader; levelName?: string | null }) {
   return (
     <p className="text-center text-sm">
       {header.trainingFullName}
-      {header.levelName ? ` — ${header.levelName}` : ''}
+      {levelName ? ` — ${levelName}` : header.levelName ? ` — ${header.levelName}` : ''}
       {header.academicYear ? ` — ${header.academicYear}` : ''}
     </p>
   );
@@ -216,6 +216,14 @@ export function MinutesSheets({
   const refused = people.filter((person) => person.status === 'REFUSED').length;
   const pending = people.filter((person) => person.status === null).length;
 
+  const totals = people.filter((person) => person.total !== null);
+  const minTotal = totals.length > 0 ? Math.min(...totals.map((p) => p.total!)) : null;
+  const maxTotal = totals.length > 0 ? Math.max(...totals.map((p) => p.total!)) : null;
+
+  const filteredLevel = people.length > 0 && people.every((p) => p.levelId === people[0]!.levelId)
+    ? people[0]!.levelName
+    : null;
+
   return (
     <>
       {pages.map((page, pageIndex) => (
@@ -225,9 +233,9 @@ export function MinutesSheets({
           <div className="mb-4 space-y-1 text-center">
             <h1 className="rtl-block text-center text-xl font-bold">محضر المداولة</h1>
             <p className="text-lg font-bold uppercase">Procès-verbal de délibération</p>
-            <SessionLine header={header} />
+            <SessionLine header={header} levelName={filteredLevel} />
             <p className="text-xs text-black/60">
-              Seuil d’admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
+              Seuil d2019admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
               {pages.length}
             </p>
           </div>
@@ -283,6 +291,9 @@ export function MinutesSheets({
                 Total : {people.length} inscrit(s) — <strong>{admitted}</strong> admis,{' '}
                 <strong>{refused}</strong> ajourné(s)
                 {pending > 0 ? `, ${pending} non délibéré(s)` : ''}.
+                {minTotal !== null && maxTotal !== null
+                  ? ` Scores : ${minTotal}–${maxTotal} / ${header.admissionThreshold}.`
+                  : ''}
               </p>
               <IssuePlace header={header} />
             </>
