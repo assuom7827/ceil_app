@@ -15,8 +15,13 @@ const amiri = Amiri({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CEIL — Université de Mostaganem',
+    default: 'CEIL — Université Abdelhamid Ibn Badis – Mostaganem',
     template: '%s · CEIL',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
   description:
     "Gestion du Centre d'Enseignement Intensif des Langues — inscriptions, positionnement, délibérations et documents officiels.",

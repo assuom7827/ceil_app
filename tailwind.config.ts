@@ -49,6 +49,14 @@ const config: Config = {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',
         },
+        ceil: {
+          primary: '#1e73be',
+          'primary-dark': '#003d7c',
+          secondary: '#c8102e',
+          accent: '#f5a623',
+          light: '#e8f0fe',
+          dark: '#002a5a',
+        },
       },
       boxShadow: {
         // Ombre douce mais lisible, pour détacher les cartes du fond gris.
