@@ -16,11 +16,13 @@ import { prisma } from '@/lib/prisma';
 import { deriveSessionTitle, deriveYears } from '@/services/derive';
 import { canWrite } from '@/services/rbac';
 import { NewSessionButton } from './new-session-button';
+import { SessionActions } from './session-actions';
 
 export const metadata: Metadata = { title: 'Sessions de formation' };
 
 export default async function SessionsPage() {
   const actor = await requireActor();
+  const canWriteSession = canWrite(actor, 'TrainingSession');
 
   const sessions = await prisma.trainingSession.findMany({
     where: { disabled: false },
@@ -47,7 +49,7 @@ export default async function SessionsPage() {
             Ouvrez l’espace de travail d’une session pour inscrire, noter et délibérer.
           </p>
         </div>
-        <NewSessionButton canWrite={canWrite(actor, 'TrainingSession')} />
+         <NewSessionButton canWrite={canWriteSession} />
       </div>
 
       <Card>
@@ -72,7 +74,7 @@ export default async function SessionsPage() {
                   <TableHead className="text-end">Seuil</TableHead>
                   <TableHead className="text-end">Inscrits</TableHead>
                   <TableHead className="text-end">Groupes</TableHead>
-                  <TableHead />
+                  <TableHead className="text-end">Espace</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -101,9 +103,14 @@ export default async function SessionsPage() {
                         {session._count.groups}
                       </TableCell>
                       <TableCell className="text-end">
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/sessions/${session.id}/workspace`}>Espace de travail</Link>
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/sessions/${session.id}/workspace`}>Espace de travail</Link>
+                          </Button>
+                          {canWriteSession ? (
+                            <SessionActions sessionId={session.id} canWrite={canWriteSession} />
+                          ) : null}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
