@@ -171,6 +171,7 @@ export const studentGroupCrud: CrudConfig<Record<string, unknown>> = {
   resource: 'StudentGroup',
   delegate: (db) => db.studentGroup,
   schema: studentGroupSchema,
+  updateSchema: studentGroupSchema.partial(),
   searchable: ['name', 'site'],
   sortable: ['name', 'sequence', 'createdAt'],
   defaultOrderBy: { sequence: 'asc' },

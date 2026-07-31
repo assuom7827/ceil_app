@@ -167,6 +167,22 @@ export const ARABIC_MONTHS: Readonly<Record<number, string>> = Object.freeze({
   12: 'ديسمبر',
 });
 
+/** Mois en français, pour les mentions datées des documents officiels. */
+export const FRENCH_MONTHS: Readonly<Record<number, string>> = Object.freeze({
+  1: 'janvier',
+  2: 'février',
+  3: 'mars',
+  4: 'avril',
+  5: 'mai',
+  6: 'juin',
+  7: 'juillet',
+  8: 'août',
+  9: 'septembre',
+  10: 'octobre',
+  11: 'novembre',
+  12: 'décembre',
+});
+
 /** Mois arabe à partir du numéro 1..12. Retourne `null` hors intervalle. */
 export function arabicMonth(month: Nullable<number>): string | null {
   if (!isNumber(month)) return null;
@@ -177,6 +193,18 @@ export function arabicMonth(month: Nullable<number>): string | null {
 export function arabicMonthOfDate(value: Nullable<Date | string>): string | null {
   const date = toDate(value);
   return date ? arabicMonth(date.getMonth() + 1) : null;
+}
+
+/** Mois français à partir du numéro 1..12. Retourne `null` hors intervalle. */
+export function frenchMonth(month: Nullable<number>): string | null {
+  if (!isNumber(month)) return null;
+  return FRENCH_MONTHS[month] ?? null;
+}
+
+/** Mois français d'une date (utilisé pour le lieu et date du procès-verbal). */
+export function frenchMonthOfDate(value: Nullable<Date | string>): string | null {
+  const date = toDate(value);
+  return date ? frenchMonth(date.getMonth() + 1) : null;
 }
 
 /** `yearFrom` / `yearTo` — DÉRIVÉS des dates de la session. */
@@ -193,6 +221,11 @@ export function deriveYears(range: DateRangeInput): {
 /** `arabicMonthTo` — mois de fin de session en arabe, pour le diplôme. */
 export function deriveArabicMonthTo(range: DateRangeInput): string | null {
   return arabicMonthOfDate(range.dateTo);
+}
+
+/** `frenchMonthTo` — mois de fin de session en français, pour le procès-verbal. */
+export function deriveFrenchMonthTo(range: DateRangeInput): string | null {
+  return frenchMonthOfDate(range.dateTo);
 }
 
 // ============================================================================

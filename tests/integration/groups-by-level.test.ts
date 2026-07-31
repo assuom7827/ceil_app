@@ -153,11 +153,34 @@ describe.skipIf(!hasDb)('ouverture des groupes par niveau', () => {
     await lockSession(prisma, session.id);
 
     await expect(organizeGroupsByLevel(prisma, session.id)).rejects.toMatchObject({
-      code: 'LOCKED',
-      status: 409,
-    });
-  });
-});
+       code: 'LOCKED',
+       status: 409,
+     });
+   });
+
+   it('copie l\'enseignant du gabarit sur chaque groupe ouvert — un enseignant pour plusieurs groupes', async () => {
+     const { session } = await sessionWithLeveledEnrollments({ A1: 60, B1: 30 });
+     const teacher = await prisma.teacher.create({
+       data: { name: 'Dupont', teacherType: 'PERMANENT' },
+     });
+
+     await createGroupTemplate('SESSION', 1, 25, 'Groupe 1', teacher.id);
+     await createGroupTemplate('SESSION', 2, 25, 'Groupe 2', teacher.id);
+
+     await organizeGroupsByLevel(prisma, session.id);
+
+     const groups = await prisma.studentGroup.findMany({
+       where: { trainingSessionId: session.id, isTemplate: false },
+       orderBy: { sequence: 'asc' },
+       select: { teacherId: true, trainingLevel: { select: { name: true } } },
+     });
+
+     // 60 A1 / 25 capacité → 3 groupes ; 30 B1 / 25 → 2 groupes = 5 au total.
+     expect(groups).toHaveLength(5);
+     // Tous les groupes partagent le même enseignant (celui du gabarit).
+     expect(groups.every((g) => g.teacherId === teacher.id)).toBe(true);
+   });
+ });
 
 describe.skipIf(!hasDb)('répartition des inscrits par niveau', () => {
   beforeEach(async () => {

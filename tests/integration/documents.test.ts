@@ -88,13 +88,36 @@ describe.skipIf(!hasDb)('procès-verbal', () => {
     expect(header.admissionThreshold).toBe(50);
   });
 
-  it('expose le mois de fin de session EN ARABE', async () => {
+   it('expose le mois de fin de session EN ARABE', async () => {
     const { session } = await setup({ dateTo: new Date('2026-06-15') });
     const { header } = await getMinutesDocument(prisma, session.id);
 
     // Convention algérienne : juin s'écrit « جوان ».
     expect(header.arabicMonthTo).toBe('جوان');
     expect(header.yearTo).toBe(2026);
+  });
+
+  it('porte le nom de l\'enseignant du groupe de chaque élève dans le PV', async () => {
+    const { session, levels } = await setup();
+    const teacher = await prisma.teacher.create({
+      data: { name: 'Dupont Marie', teacherType: 'PERMANENT' },
+    });
+
+    // Attribuer le niveau A1 à tous les élèves, ouvrir les groupes par niveau
+    // avec le gabarit portant l'enseignant, puis répartir les inscrits.
+    await prisma.enrollment.updateMany({
+      where: { trainingSessionId: session.id },
+      data: { assignedLevelId: levels[0]!.id },
+    });
+    await createGroupTemplate('SESSION', 1, 25, 'Groupe 1', teacher.id);
+    await organizeGroupsByLevel(prisma, session.id, { capacity: 10 });
+    await assignGroupsByLevel(prisma, session.id);
+
+    const { people } = await getMinutesDocument(prisma, session.id);
+
+    expect(people.length).toBeGreaterThan(0);
+    // Tous les élèves sont dans le même groupe → le même enseignant.
+    expect(people.every((p) => p.teacherName === teacher.name)).toBe(true);
   });
 
   it('retombe sur le modèle de diplôme par défaut', async () => {

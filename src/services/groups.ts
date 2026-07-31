@@ -177,10 +177,12 @@ export async function organizeGroupsByLevel(
             sequence: index + 1,
             capacity,
             trainingSessionId,
-            trainingLevelId: levelId,
-            // Les caractéristiques logistiques viennent du 1er gabarit ; elles
-            // restent ajustables groupe par groupe ensuite.
-            site: firstTemplate?.site ?? null,
+             trainingLevelId: levelId,
+             // Les caractéristiques logistiques viennent du 1er gabarit ; elles
+             // restent ajustables groupe par groupe ensuite. Le même enseignant
+             // peut ainsi être partagé par plusieurs groupes.
+             teacherId: firstTemplate?.teacherId ?? null,
+             site: firstTemplate?.site ?? null,
             startTime: firstTemplate?.startTime ?? null,
             endTime: firstTemplate?.endTime ?? null,
             hourlyVolume: firstTemplate?.hourlyVolume ?? null,

@@ -235,9 +235,68 @@ côté serveur. Masquer un lien n'a jamais empêché quiconque de saisir une URL
 
 `/users` et `/api/users`, réservés à `ADMIN` — y compris en lecture : un
 `MANAGER` ne peut pas énumérer les comptes. Le hachage du mot de passe ne sort
-jamais de l'API. Trois garde-fous empêchent le dernier administrateur de
+jamais de l'API. Trois garde-faux empêchent le dernier administrateur de
 s'enfermer dehors : il ne peut ni retirer son propre rôle, ni se désactiver, ni
 supprimer son compte.
+
+#### Création d'un compte administrateur via l'API
+
+`POST /api/users` crée un compte. L'appel exige une **session `ADMIN`** (RBAC
+vérifié côté serveur). Le mot de passe est haché avec **bcrypt (10 tours)**
+avant l'écriture, et le hachage n'est jamais renvoyé dans la réponse. La
+validation exige un mot de passe d'au moins **10 caractères**.
+
+```bash
+# 1. S'identifier avec un compte ADMIN existant pour obtenir le cookie de session
+curl -c cookies.txt \
+  -X POST http://localhost:3000/api/auth/callback/credentials \
+  -d 'redirect=false' \
+  -d 'email=admin@ceil.local' \
+  -d 'password=Ceil@Admin2025!'
+
+# 2. Créer le compte administrateur
+curl -b cookies.txt \
+  -X POST http://localhost:3000/api/users \
+  -H 'content-type: application/json' \
+  -d '{
+        "email": "nouvel.admin@ceil.local",
+        "name": "Nouvel Administrateur",
+        "role": "ADMIN",
+        "password": "MotDePasseSolide1!"
+      }'
+# → 201, corps sans passwordHash
+
+# 3. Modifier un compte — ex. réactiver un compte désactivé
+curl -b cookies.txt \
+  -X PATCH http://localhost:3000/api/users/<id> \
+  -H 'content-type: application/json' \
+  -d '{"active": true}'
+```
+
+Pour lire ou modifier un compte :
+
+```bash
+curl -b cookies.txt http://localhost:3000/api/users/<id>          # GET — détail
+curl -b cookies.txt http://localhost:3000/api/users                # GET — liste
+```
+
+#### Sécurité : création d'administration depuis localhost uniquement
+
+Créer un compte `ADMIN` via l'API est un **bootstrap** qui doit être **restreint
+à localhost** — jamais accessible depuis un autre réseau. Le RBAC n'autorise que
+le **rôle** `ADMIN`, pas l'**endroit** d'où la requête provient : ce filtrage
+d'adresse source vit nécessairement au niveau de l'infrastructure, pas dans le
+middleware (edge runtime, aucun accès à l'IP source fiable) :
+
+- **Reverse proxy (nginx)** : restreindre `POST /api/users` à `127.0.0.1` et
+  `::1` avec `allow` / `deny` ou une ACL `real_ip` — le proxy expose le 443, le
+  serveur d'application (3000) n'est jamais atteint de l'extérieur.
+- **Pare-feu d'hôte** : bloquer l'accès au port 3000 depuis l'extérieur ; ne
+  laisser traverser 3000 que depuis `lo`.
+- **Conteneur** : `ports: ['127.0.0.1:3000:3000']` au lieu de `0.0.0.0:3000:3000`.
+
+> Le premier administrateur peut aussi être promu en base — voir
+> [`docs/exploitation.md`](./docs/exploitation.md#premier-compte).
 
 ## API REST
 
@@ -276,7 +335,7 @@ Réponse : `{ data, meta: { page, perPage, total, totalPages } }`.
 | `POST /api/sessions/{id}/deliberation/import-scores`          | Import des 4 notes                                                                              |
 | `POST /api/sessions/{id}/deliberation/recompute`              | Renvoie admis / ajournés / non délibérés                                                        |
 | `POST /api/sessions/{id}/groups/organize?type=SESSION\|EXAM`  | Instancie les gabarits                                                                          |
-| `POST /api/sessions/{id}/groups/organize-by-level`            | Ouvre les groupes par niveau, dimensionnés sur l'effectif                                       |
+| `GET` · `POST /api/sessions/{id}/groups/organize-by-level`    | Liste les groupes avec effectif, niveau visé et enseignant / ouvre les groupes par niveau, dimensionnés sur l'effectif |
 | `POST /api/sessions/{id}/groups/assign-by-level`              | Range chaque inscrit dans un groupe de son niveau                                               |
 | `POST /api/sessions/{id}/groups/assign-exam`                  | Remplit les salles d'examen                                                                     |
 | `GET` · `PUT /api/positioning-tests/{id}/scores`              | Grille du positionnement, `total` et niveau résolu dérivés                                      |
@@ -337,7 +396,7 @@ en onglets, sans quitter la page.
 | **Inscrits**             | Grille éditable (type, niveau attribué, groupes), inscription en une étape, import Excel/CSV, affectation de groupe en masse, retrait |
 | **Positionnement**       | Saisie E.E / C.E, colonnes `total` et `niveau résolu` calculées en direct, « Déterminer les niveaux », import                         |
 | **Notes / Délibération** | Saisie des 4 compétences, `total` et `statut` en direct selon le seuil de la session, « Recalculer les résultats », import            |
-| **Groupes**              | Ouverture des groupes par niveau dimensionnés sur l'effectif, répartition, salles d'examen                                            |
+| **Groupes**              | Ouverture des groupes par niveau dimensionnés sur l'effectif, répartition, **enseignant éditable par groupe** (un enseignant partagé entre plusieurs groupes), salles d'examen |
 | **Documents**            | Procès-verbal, diplômes, listes d'émargement en A4, et **attestations de réussite en PDF** depuis le gabarit LibreOffice              |
 
 L'en-tête reste visible en permanence : titre dérivé, seuil d'admission
@@ -399,7 +458,7 @@ travail, ou par URL directe.
 
 | Document                      | Route                               | Source                                                   |
 | ----------------------------- | ----------------------------------- | -------------------------------------------------------- |
-| Procès-verbal de délibération | `/print/sessions/{id}/minutes`      | Toutes les inscriptions, notées ou non                   |
+| Procès-verbal de délibération | `/print/sessions/{id}/minutes`      | Toutes les inscriptions, notées ou non ; `?levelId=` pour un niveau. Inclut les **enseignants intervenant(s) au niveau** avec ligne de signature |
 | Diplômes                      | `/print/sessions/{id}/diplomas`     | **Uniquement les admis** ; `?enrollmentId=` pour un seul |
 | Attestations                  | `/print/sessions/{id}/attestations` | Toute inscription, admise ou non                         |
 | Liste d'émargement            | `/print/sessions/{id}/list`         | `?groupId=` pour un groupe, sinon toute la session       |
@@ -470,6 +529,27 @@ Deux garde-fous : la répartition **complète** les groupes existants au lieu de
 tout rebrasser (relancer après l'arrivée de nouveaux inscrits est sans danger),
 et les inscrits sans niveau attribué sont **comptés à part** (`withoutLevel`)
 plutôt que placés au hasard — signe que le positionnement reste à faire.
+
+#### Enseignants et groupes
+
+Chaque groupe — session ou examen — peut référencer un enseignant via
+`teacherId` (`StudentGroup.teacherId` → `Teacher`). La relation est
+**`Teacher` → `StudentGroup[]`** : un même enseignant peut piloter **plusieurs
+groupes** — y compris des groupes de niveaux différents, ou plusieurs groupes
+d'un même niveau.
+
+- **Gabarits d'examen** : `organizeGroups` **copie** l'enseignant du gabarit
+  sur chaque groupe instancié.
+- **Groupes par niveau** : `organizeGroupsByLevel` **copie également** l'enseignant
+  du premier gabarit de session sur tous les groupes ouverts — un seul
+  intervant pour plusieurs groupes d'un même niveau, ou pour des niveaux
+  différents si le template le porte. L'enseignant reste ajustable **groupe par
+  groupe** par `PATCH /api/groups/[id]` après l'ouverture.
+- **Lecture** : `GET /api/sessions/{id}/groups/organize-by-level` et
+  `GET /api/groups/{id}` renvoient `teacher { id, name }` avec chaque groupe.
+
+Les enseignants eux-mêmes sont gérés depuis **`/references` → Enseignants**
+(`POST` / `PATCH` / `DELETE` sur `/api/teachers`), indépendamment des groupes.
 
 ## Tests
 

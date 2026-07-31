@@ -102,7 +102,7 @@ export async function getDeliberation(db: Db, trainingSessionId: string) {
         },
       },
       assignedLevel: { select: { id: true, name: true } },
-      sessionGroup: { select: { id: true, name: true } },
+      sessionGroup: { select: { id: true, name: true, teacher: { select: { name: true } } } },
       deliberationEntry: true,
     },
   });

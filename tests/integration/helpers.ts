@@ -136,8 +136,9 @@ export async function createGroupTemplate(
   sequence: number,
   capacity: number | null,
   name = `${groupType}-${sequence}`,
+  teacherId?: string,
 ) {
   return prisma.studentGroup.create({
-    data: { name, groupType, sequence, capacity, isTemplate: true },
+    data: { name, groupType, sequence, capacity, isTemplate: true, teacherId },
   });
 }

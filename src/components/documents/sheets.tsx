@@ -73,6 +73,19 @@ function IssuePlace({ header }: { header: DocumentHeader }) {
   );
 }
 
+/**
+ * Pied de page du procès-verbal : seulement lieu et date en français.
+ * Pas de mention de directeur — le PV est une trace de séance, pas un document
+ * signé individuellement.
+ */
+function MinutesFooter({ header }: { header: DocumentHeader }) {
+  return (
+    <p className="mt-12 text-sm">
+      Mostaganem, {header.frenchMonthTo ?? '—'} {header.yearTo ?? ''}
+    </p>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Diplôme — une feuille par admis
 // ---------------------------------------------------------------------------
@@ -220,9 +233,12 @@ export function MinutesSheets({
   const minTotal = totals.length > 0 ? Math.min(...totals.map((p) => p.total!)) : null;
   const maxTotal = totals.length > 0 ? Math.max(...totals.map((p) => p.total!)) : null;
 
-  const filteredLevel = people.length > 0 && people.every((p) => p.levelId === people[0]!.levelId)
-    ? people[0]!.levelName
-    : null;
+  const filteredLevel =
+    people.length > 0 && people.every((p) => p.levelId === people[0]!.levelId)
+      ? people[0]!.levelName
+      : null;
+
+  const distinctTeachers = [...new Set(people.map((p) => p.teacherName).filter(Boolean))];
 
   return (
     <>
@@ -290,12 +306,30 @@ export function MinutesSheets({
               <p className="mt-4 text-sm">
                 Total : {people.length} inscrit(s) — <strong>{admitted}</strong> admis,{' '}
                 <strong>{refused}</strong> ajourné(s)
-                {pending > 0 ? `, ${pending} non délibéré(s)` : ''}.
+                {pending > 0 ? `, ${pending} non délibéré(s)` : ''}
                 {minTotal !== null && maxTotal !== null
                   ? ` Scores : ${minTotal}–${maxTotal} / ${header.admissionThreshold}.`
                   : ''}
               </p>
-              <IssuePlace header={header} />
+
+              {distinctTeachers.length > 0 ? (
+                <div className="mt-8 border-t border-black/40 pt-4">
+                  <p className="text-sm">
+                    <strong>Enseignant(s) </strong>
+                    {filteredLevel ? `intervenant(s) au niveau ${filteredLevel}` : ''} :
+                  </p>
+                  <div className="mt-2 space-y-3">
+                    {distinctTeachers.map((teacher, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>{teacher}</span>
+                        <span className="text-xs italic">_________________________</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <MinutesFooter header={header} />
             </>
           ) : null}
         </article>

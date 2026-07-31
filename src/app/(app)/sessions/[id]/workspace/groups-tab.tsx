@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { apiGet, apiPost } from '@/lib/api/client';
+import { apiGet, apiPost, apiPatch } from '@/lib/api/client';
 import { FeedbackBanner, Spinner, useAction } from './feedback';
-import type { GroupRow } from './types';
+import type { GroupRow, NamedRef } from './types';
 
 export function GroupsTab({
   sessionId,
@@ -30,12 +30,17 @@ export function GroupsTab({
   onCountChange: (count: number) => void;
 }) {
   const [groups, setGroups] = React.useState<GroupRow[] | null>(null);
+  const [teachers, setTeachers] = React.useState<NamedRef[]>([]);
   const [capacity, setCapacity] = React.useState('');
   const { pending, feedback, run } = useAction();
 
   const load = React.useCallback(async () => {
-    const rows = await apiGet<GroupRow[]>(`/api/sessions/${sessionId}/groups/organize-by-level`);
+    const [rows, teacherRows] = await Promise.all([
+      apiGet<GroupRow[]>(`/api/sessions/${sessionId}/groups/organize-by-level`),
+      apiGet<{ data: NamedRef[] }>(`/api/teachers?perPage=200`),
+    ]);
     setGroups(rows);
+    setTeachers(teacherRows.data);
     onCountChange(rows.length);
   }, [onCountChange, sessionId]);
 
@@ -114,6 +119,14 @@ export function GroupsTab({
   const sessionGroups = groups.filter((group) => group.groupType === 'SESSION');
   const examGroups = groups.filter((group) => group.groupType === 'EXAM');
 
+  async function updateTeacher(groupId: string, teacherId: string | null) {
+    await run(async () => {
+      await apiPatch(`/api/groups/${groupId}`, { teacherId });
+      await load();
+      return 'Enseignant mis à jour.';
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="space-y-3 rounded-md border p-4">
@@ -152,7 +165,14 @@ export function GroupsTab({
           </Button>
         </div>
 
-        <GroupTable groups={sessionGroups} emptyLabel="Aucun groupe de session ouvert." showLevel />
+        <GroupTable
+          groups={sessionGroups}
+          emptyLabel="Aucun groupe de session ouvert."
+          showLevel
+          editable={editable}
+          teachers={teachers}
+          onTeacherChange={updateTeacher}
+        />
       </section>
 
       <section className="space-y-3 rounded-md border p-4">
@@ -174,7 +194,12 @@ export function GroupsTab({
           </Button>
         </div>
 
-        <GroupTable groups={examGroups} emptyLabel="Aucune salle d’examen." />
+        <GroupTable
+          groups={examGroups}
+          emptyLabel="Aucune salle d’examen."
+          editable={editable}
+          hideTeacherName
+        />
       </section>
 
       <FeedbackBanner feedback={feedback} />
@@ -186,10 +211,19 @@ function GroupTable({
   groups,
   emptyLabel,
   showLevel,
+  editable,
+  teachers = [],
+  onTeacherChange,
+  hideTeacherName = false,
 }: {
   groups: GroupRow[];
   emptyLabel: string;
   showLevel?: boolean;
+  editable?: boolean;
+  teachers?: NamedRef[];
+  onTeacherChange?: (groupId: string, teacherId: string | null) => Promise<void>;
+  /** Masque le nom de l'enseignant en lecture seule (ex. groupes d'examen). */
+  hideTeacherName?: boolean;
 }) {
   if (groups.length === 0) {
     return <p className="py-4 text-sm text-muted-foreground">{emptyLabel}</p>;
@@ -222,7 +256,30 @@ function GroupTable({
                   )}
                 </TableCell>
               ) : null}
-              <TableCell className="text-muted-foreground">{group.teacher?.name ?? '—'}</TableCell>
+              <TableCell>
+                {editable && !hideTeacherName ? (
+                  <select
+                    aria-label={`Enseignant du groupe ${group.name}`}
+                    className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={group.teacher?.id ?? ''}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      void onTeacherChange?.(group.id, value ? value : null);
+                    }}
+                  >
+                    <option value="">Aucun</option>
+                    {teachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {hideTeacherName ? '—' : (group.teacher?.name ?? '—')}
+                  </span>
+                )}
+              </TableCell>
               <TableCell className="text-muted-foreground">{group.site ?? '—'}</TableCell>
               <TableCell className="text-end tabular-nums">
                 <span className={full ? 'font-semibold text-destructive' : undefined}>

@@ -44,7 +44,7 @@ async function documentSession(page: Page): Promise<string> {
 }
 
 test.describe('documents imprimables', () => {
-  test('le procès-verbal affiche le tableau et le mois arabe', async ({ page }) => {
+  test('le procès-verbal affiche le tableau et la date en français', async ({ page }) => {
     await login(page);
     const sessionId = await documentSession(page);
     await page.goto(`/print/sessions/${sessionId}/minutes`);
@@ -54,8 +54,11 @@ test.describe('documents imprimables', () => {
     await expect(page.getByText('Procès-verbal de délibération').first()).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Décision' }).first()).toBeVisible();
 
-    // Le mois de fin de session (juin 2026) doit apparaître en arabe algérien.
-    await expect(page.getByText(/جوان/).first()).toBeVisible();
+    // Le mois de fin de session (juin 2026) doit apparaître en français.
+    await expect(page.getByText(/juin/)).toBeVisible();
+    // Le pied de page ne comporte ni directeur, ni texte arabe.
+    await expect(page.getByText('Le Directeur')).toHaveCount(0);
+    await expect(page.getByText('المدير')).toHaveCount(0);
   });
 
   test('les blocs arabes sont rendus en sens de lecture inversé', async ({ page }) => {
