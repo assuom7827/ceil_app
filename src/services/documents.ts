@@ -9,6 +9,7 @@ import type { Db } from './db';
 import { getDeliberation } from './deliberation';
 import {
   deriveArabicMonthTo,
+  deriveFrenchMonthTo,
   deriveBirthDisplay,
   deriveParticipantArabicFullName,
   deriveParticipantFullName,
@@ -38,6 +39,8 @@ export interface DocumentHeader {
   yearTo: number | null;
   /** Mois de fin de session en arabe — exigé sur le diplôme. */
   arabicMonthTo: string | null;
+  /** Mois de fin de session en français — utilisé sur le procès-verbal. */
+  frenchMonthTo: string | null;
   admissionThreshold: number;
 }
 
@@ -53,6 +56,7 @@ export interface DocumentPerson {
   levelName: string | null;
   levelId: string | null;
   groupName: string | null;
+  teacherName: string | null;
   scores: {
     oralExpression: number | null;
     writtenExpression: number | null;
@@ -129,6 +133,7 @@ async function loadHeader(db: Db, trainingSessionId: string): Promise<DocumentHe
     yearFrom: years.yearFrom,
     yearTo: years.yearTo,
     arabicMonthTo: deriveArabicMonthTo(session),
+    frenchMonthTo: deriveFrenchMonthTo(session),
     admissionThreshold: session.admissionThreshold,
   };
 }
@@ -169,6 +174,7 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
       levelName: row.assignedLevel?.name ?? null,
       levelId: row.assignedLevel?.id ?? null,
       groupName: row.sessionGroup?.name ?? null,
+      teacherName: row.sessionGroup?.teacher?.name ?? null,
       scores: {
         oralExpression: row.oralExpression,
         writtenExpression: row.writtenExpression,
@@ -197,9 +203,7 @@ export async function getMinutesDocument(
     loadPeople(db, trainingSessionId),
   ]);
 
-  const filtered = levelId
-    ? people.filter((person) => person.levelId === levelId)
-    : people;
+  const filtered = levelId ? people.filter((person) => person.levelId === levelId) : people;
 
   filtered.sort((a, b) => a.fullName.localeCompare(b.fullName, undefined, { numeric: true }));
 

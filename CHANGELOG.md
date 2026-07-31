@@ -6,6 +6,41 @@ choix est dans [`docs/decisions.md`](./docs/decisions.md) ; l'état actuel dans
 
 ## 2026-07-31
 
+### Gestion des enseignants sur les groupes par niveau — `d4e5f6a`
+
+`organizeGroupsByLevel` copie désormais l'enseignant du gabarit sur chaque groupe
+de session ouvert — cohérent avec `organizeGroups` (groupes d'examen). Un même
+enseignant peut ainsi être partagé par plusieurs groupes d'un niveau ou de niveaux
+différents, tout en restant ajustable groupe par groupe ensuite :
+
+- `src/services/groups.ts` : `teacherId` du premier gabarit appliqué aux groupes
+  créés niveau par niveau.
+- Grille des groupes : l'enseignant est **éditable directement** dans le tableau
+  de l'onglet Groupes (select déroulant → `PATCH /api/groups/[id]`), un enseignant
+  pouvant être partagé entre plusieurs groupes.
+- `src/lib/api/resources.ts` : **correctif** — `studentGroupCrud` expose un
+  `updateSchema` partiel (`.partial()`) pour le PATCH. Sans cela, toute mise à
+  jour partielle (ex. `PATCH /api/groups/{id} { teacherId }`) échouait : le
+  schéma exigeait `name` et `groupType`, non fournis lors d'un PATCH.
+- PV de déliberation : le nom de l'enseignant de chaque élève est inclus dans le
+  procès-verbal avec une ligne de signature — `getDeliberation` charge
+  `sessionGroup.teacher`, `DocumentPerson.teacherName`, `MinutesSheets` les
+  affiche.
+- Tests : couverture de la copie de l'enseignant avec partage entre plusieurs
+  groupes d'un même niveau (`groups-by-level.test.ts`), de la présence du nom
+  d'enseignant dans le PV (`documents.test.ts`), et du PATCH partiel
+  (`api.test.ts`).
+
+### Documentation : administration des comptes et sécurité localhost — `d4e5f6a`
+
+- README : ajout des commandes `curl` pour créer un compte `ADMIN` via
+  `POST /api/users` (authentification par cookie de session, mot de passe en clair
+  hashé avec bcrypt, jamais renvoyé).
+- Documentation de la contrainte **localhost-only** pour la création
+  d'administration : reverse proxy (nginx `allow`/`deny`), pare-feu d'hôte, ou
+  binding de port de conteneur `127.0.0.1:3000:3000`.
+- `docs/exploitation.md` : référence croisée vers la méthode API.
+
 ### Identité visuelle — `a1b2c3d`
 
 Ajout de l'identité institutionnelle du CEIL :

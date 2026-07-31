@@ -18,6 +18,8 @@ vi.mock('@/auth', () => ({
 
 import { GET as listFaculties, POST as createFaculty } from '@/app/api/faculties/route';
 import { GET as listTrainings, POST as createTraining } from '@/app/api/trainings/route';
+import { POST as createGroup } from '@/app/api/groups/route';
+import { PATCH as patchGroup } from '@/app/api/groups/[id]/route';
 import { POST as enrollRoute } from '@/app/api/sessions/[id]/enroll/route';
 import { POST as lockRoute } from '@/app/api/sessions/[id]/lock/route';
 import { POST as unlockRoute } from '@/app/api/sessions/[id]/unlock/route';
@@ -157,6 +159,36 @@ describe.skipIf(!hasDb)('API — validation et conflits', () => {
       path: 'maximumPoints',
       message: 'Le maximum doit être strictement supérieur au minimum',
     });
+  });
+
+  it('autorise un PATCH partiel sur un groupe — ex. assigner un enseignant sans préciser name/type', async () => {
+    const teacher = await prisma.teacher.create({
+      data: { name: 'Dupont', teacherType: 'PERMANENT' },
+    });
+    const createResponse = await createGroup(
+      request('/api/groups', { method: 'POST', body: { name: 'G1', groupType: 'SESSION' } }),
+      params({}),
+    );
+    expect(createResponse.status).toBe(201);
+    const groupId = (await bodyOf(createResponse)).id as string;
+
+    // PATCH avec uniquement teacherId — name et groupType ne sont pas requis.
+    const response = await patchGroup(
+      request(`/api/groups/${groupId}`, { method: 'PATCH', body: { teacherId: teacher.id } }),
+      params({ id: groupId }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await bodyOf(response);
+    expect(body).toMatchObject({ teacher: { id: teacher.id, name: 'Dupont' } });
+
+    // Un enseignant peut être retiré en passant null.
+    const cleared = await patchGroup(
+      request(`/api/groups/${groupId}`, { method: 'PATCH', body: { teacherId: null } }),
+      params({ id: groupId }),
+    );
+    expect(cleared.status).toBe(200);
+    expect((await bodyOf(cleared)).teacher).toBeNull();
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ARABIC_MONTHS,
+  FRENCH_MONTHS,
   arabicMonth,
   arabicMonthOfDate,
   deriveAdmissionStatus,
@@ -8,6 +9,7 @@ import {
   deriveBirthDisplay,
   deriveEntryTotal,
   deriveEntryTotalAndStatus,
+  deriveFrenchMonthTo,
   deriveParticipantArabicFullName,
   deriveParticipantFullName,
   derivePositioning,
@@ -18,6 +20,8 @@ import {
   formatEnrollmentRegistrationNumber,
   formatParticipantRegistrationNumber,
   formatReceiptNumber,
+  frenchMonth,
+  frenchMonthOfDate,
   isLocked,
   resolveLevelForPoints,
   sumScores,
@@ -119,6 +123,28 @@ describe('dates dérivées', () => {
   it('expose le mois de fin de session pour le diplôme', () => {
     expect(deriveArabicMonthTo({ dateTo: new Date(2026, 6, 3) })).toBe('جويلية');
     expect(deriveArabicMonthTo({})).toBeNull();
+  });
+
+  it('couvre les 12 mois français', () => {
+    expect(Object.keys(FRENCH_MONTHS)).toHaveLength(12);
+    expect(frenchMonth(6)).toBe('juin');
+    expect(frenchMonth(7)).toBe('juillet');
+  });
+
+  it('rejette un numéro de mois français hors intervalle', () => {
+    expect(frenchMonth(0)).toBeNull();
+    expect(frenchMonth(13)).toBeNull();
+    expect(frenchMonth(null)).toBeNull();
+  });
+
+  it('déduit le mois français d’une date', () => {
+    expect(frenchMonthOfDate(new Date(2026, 5, 15))).toBe('juin');
+    expect(frenchMonthOfDate('pas-une-date')).toBeNull();
+  });
+
+  it('exprime le mois de fin de session en français pour le PV', () => {
+    expect(deriveFrenchMonthTo({ dateTo: new Date(2026, 6, 3) })).toBe('juillet');
+    expect(deriveFrenchMonthTo({})).toBeNull();
   });
 
   it('déduit les années de début et de fin', () => {
