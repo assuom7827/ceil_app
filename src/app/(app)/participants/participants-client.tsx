@@ -2,14 +2,14 @@
 
 import { ResourceManager } from '@/components/crud/resource-manager';
 import type { ResourceRecord } from '@/components/crud/fields';
-import { deriveParticipantFullName } from '@/services/derive';
+import { deriveBirthDisplay, deriveParticipantFullName } from '@/services/derive';
 
 export function ParticipantsClient({ canWrite }: { canWrite: boolean }) {
   return (
     <ResourceManager
       endpoint="/api/participants"
       title="Participants"
-      description="Personnes indépendantes des sessions : le niveau et le groupe appartiennent à l’inscription."
+      description="Personnes indépendantes des sessions : le niveau et le groupe appartiennent à l'inscription."
       canWrite={canWrite}
       searchPlaceholder="Nom, prénom, matricule, téléphone…"
       rowLabel={(row) =>
@@ -23,7 +23,18 @@ export function ParticipantsClient({ canWrite }: { canWrite: boolean }) {
           // Dérivé par la même fonction que le serveur.
           render: (row) => deriveParticipantFullName(row as never) || '—',
         },
-        { key: 'arabName', header: 'Nom arabe' },
+        {
+          key: 'birthDate',
+          header: 'Date de naissance',
+          render: (row) => {
+            const display = deriveBirthDisplay({
+              birthDate: row['birthDate'] as string | Date | null | undefined,
+              birthDateIsApproximate: row['birthDateIsApproximate'] as boolean | null | undefined,
+              approximateBirth: row['approximateBirth'] as string | null | undefined,
+            });
+            return display || '—';
+          },
+        },
         {
           key: 'type',
           header: 'Type',

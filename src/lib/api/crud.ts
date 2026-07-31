@@ -9,7 +9,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { notFoundError } from '@/services/errors';
-import type { Resource } from '@/services/rbac';
+import type { Actor, Resource } from '@/services/rbac';
 import { route, readJson, type HandlerContext } from './handler';
 import { orderByFor, paginate, parseListQuery, searchFilter, skipTake } from './pagination';
 
@@ -47,6 +47,13 @@ export interface CrudConfig<TInput> {
   /** L'entité porte-t-elle un champ `disabled` ? */
   softDisable?: boolean;
   /**
+   * Filtre additionnel appliqué aux listes, après le filtre `disabled` par
+   * défaut. Reçoit l'acteur courant et la requête parsée. Les clés retournées
+   * écrrasent les filtres précédents, ce qui permet de remplacer le filtre
+   * `disabled` par un comportement basé sur le rôle.
+   */
+  listFilter?: (actor: Actor, query: ReturnType<typeof parseListQuery>) => Record<string, unknown>;
+  /**
    * Invariant à rétablir après écriture (ex. « un seul défaut actif »).
    * Reçoit l'enregistrement produit et renvoie sa version définitive, afin que
    * la réponse ne présente jamais un état déjà corrigé en base.
@@ -63,12 +70,13 @@ function dataFrom<TInput>(
 
 /** `GET /api/<ressource>` et `POST /api/<ressource>`. */
 export function collectionRoutes<TInput>(config: CrudConfig<TInput>) {
-  const GET = route({ resource: config.resource, access: 'read' }, async ({ db, url }) => {
+  const GET = route({ resource: config.resource, access: 'read' }, async ({ db, url, actor }) => {
     const query = parseListQuery(url);
     const delegate = config.delegate(db);
 
     const where = {
       ...(config.softDisable !== false && !query.includeDisabled ? { disabled: false } : {}),
+      ...(config.listFilter ? config.listFilter(actor as Actor, query) : {}),
       ...(searchFilter(query, config.searchable ?? []) ?? {}),
     };
 

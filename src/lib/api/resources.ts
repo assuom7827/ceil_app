@@ -122,6 +122,7 @@ export const trainingCrud: CrudConfig<Record<string, unknown>> = {
   sortable: ['frName', 'code', 'createdAt'],
   defaultOrderBy: { frName: 'asc' },
   include: { levels: { orderBy: { sequence: 'asc' } } },
+  softDisable: false,
   toCreateData: ({ levelIds, ...rest }) => ({
     ...rest,
     levels: connectRelation(levelIds as string[] | undefined),
@@ -130,6 +131,17 @@ export const trainingCrud: CrudConfig<Record<string, unknown>> = {
     ...rest,
     levels: setRelation(levelIds as string[] | undefined),
   }),
+  /**
+   * Les formations désactivées sont invisibles pour le rôle `USER` uniquement.
+   * `ADMIN` et `MANAGER` voient toujours l'ensemble du catalogue, y compris
+   * les formations désactivées.
+   */
+  listFilter: (actor) => {
+    if (actor.role === 'ADMIN' || actor.role === 'MANAGER') {
+      return {};
+    }
+    return { disabled: false };
+  },
 };
 
 export const participantCrud: CrudConfig<Record<string, unknown>> = {
