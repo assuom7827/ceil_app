@@ -22,7 +22,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "lint:fix": "eslint . --fix",
-    "docs:template": "tsx scripts/generate-import-template.mts"
+    "docs:template": "tsx scripts/generate-import-template.mts",
+    "docs:attestation": "tsx scripts/generate-certificate-template.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -47,6 +48,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
+    "fflate": "^0.8.3",
     "lucide-react": "^0.469.0",
     "next": "^15.1.4",
     "next-auth": "^5.0.0-beta.25",

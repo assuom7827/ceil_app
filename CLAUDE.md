@@ -6,16 +6,17 @@ ce qui ne se discute pas, et ce qui a déjà coûté cher.
 
 ## Où est quoi
 
-| Fichier                                              | Contenu                                                       |
-| ---------------------------------------------------- | ------------------------------------------------------------- |
-| [`README.md`](./README.md)                           | Le produit : démarrage, API, écrans, documents officiels      |
-| [`docs/architecture.md`](./docs/architecture.md)     | L'organisation du code et les contrats internes               |
-| [`docs/decisions.md`](./docs/decisions.md)           | **Pourquoi** le code est ainsi — journal daté, jamais réécrit |
-| [`docs/etat-du-projet.md`](./docs/etat-du-projet.md) | Ce qui reste à faire, questions ouvertes, limites connues     |
-| [`docs/exploitation.md`](./docs/exploitation.md)     | Déploiement, reprise de données existantes, sauvegardes       |
-| [`docs/import-excel.md`](./docs/import-excel.md)     | Format des imports — document destiné aux **utilisateurs**    |
-| [`CHANGELOG.md`](./CHANGELOG.md)                     | Historique chronologique des livraisons                       |
-| [`src/services/README.md`](./src/services/README.md) | Rôle de chaque service métier                                 |
+| Fichier                                                      | Contenu                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------- |
+| [`README.md`](./README.md)                                   | Le produit : démarrage, API, écrans, documents officiels      |
+| [`docs/architecture.md`](./docs/architecture.md)             | L'organisation du code et les contrats internes               |
+| [`docs/decisions.md`](./docs/decisions.md)                   | **Pourquoi** le code est ainsi — journal daté, jamais réécrit |
+| [`docs/etat-du-projet.md`](./docs/etat-du-projet.md)         | Ce qui reste à faire, questions ouvertes, limites connues     |
+| [`docs/exploitation.md`](./docs/exploitation.md)             | Déploiement, reprise de données existantes, sauvegardes       |
+| [`docs/import-excel.md`](./docs/import-excel.md)             | Format des imports — document destiné aux **utilisateurs**    |
+| [`docs/modele-attestation.md`](./docs/modele-attestation.md) | Gabarit d'attestation ODT — document **utilisateur**          |
+| [`CHANGELOG.md`](./CHANGELOG.md)                             | Historique chronologique des livraisons                       |
+| [`src/services/README.md`](./src/services/README.md)         | Rôle de chaque service métier                                 |
 
 Une information vit à **un seul endroit**. Si elle manque, c'est qu'elle doit y
 être ajoutée — pas recopiée ailleurs.
@@ -85,6 +86,9 @@ Chacun a coûté une investigation. Le détail est dans `docs/decisions.md`.
 | Playwright `fill()`                                                       | Ne reproduit pas la frappe réelle ; utiliser `pressSequentially` pour les grilles |
 | Colonnes TanStack reconstruites à chaque rendu                            | Les `<input>` sont remontés et perdent des caractères : mémoriser par structure   |
 | Augmentation de type NextAuth                                             | Cibler `@auth/core/jwt`, pas `next-auth/jwt` qui ne fait que réexporter           |
+| ODT sans `META-INF/manifest.xml`                                          | LibreOffice ne produit **ni PDF ni erreur** : vérifier le manifeste à l'entrée    |
+| Deux conversions LibreOffice partageant un profil                         | Elles se bloquent en silence : un profil jetable par conversion                   |
+| Suite e2e sur une base de développement encombrée                         | Des specs prennent « la première session » et la veulent ouverte : réensemencer   |
 
 ## Base de données en développement
 

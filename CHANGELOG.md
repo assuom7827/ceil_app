@@ -4,6 +4,26 @@ Livraisons de la plus récente à la plus ancienne. Le **pourquoi** de chaque
 choix est dans [`docs/decisions.md`](./docs/decisions.md) ; l'état actuel dans
 [`docs/etat-du-projet.md`](./docs/etat-du-projet.md).
 
+## 2026-07-30
+
+### Gabarit d'attestation préparé dans LibreOffice
+
+La mise en page de l'attestation de réussite quitte le code : l'administration
+téléverse un `.odt` portant des repères `{{…}}`, l'application les remplit et
+LibreOffice convertit en PDF — une page par admis, dans un seul fichier.
+([D-26](./docs/decisions.md#d-26), [D-27](./docs/decisions.md#d-27))
+
+Le gabarit vit en base pour qu'un `pg_dump` suffise à le restaurer. LibreOffice
+devient la seule dépendance système, confinée à un service et sans laquelle le
+reste de l'application continue de fonctionner.
+
+Deux pièges découverts en testant : un ODT sans `META-INF/manifest.xml` ne
+produit **aucun PDF ni erreur** — le manifeste est donc vérifié au téléversement ;
+et deux conversions partageant un profil LibreOffice se bloquent en silence —
+chacune reçoit désormais un profil jetable.
+
+Guide utilisateur : [`docs/modele-attestation.md`](./docs/modele-attestation.md).
+
 ## 2026-07-29
 
 ### Mémoire du projet — étape 10

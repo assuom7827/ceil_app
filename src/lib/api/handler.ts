@@ -92,6 +92,18 @@ export async function readJson<T>(
  * Utilisé par les imports Excel/CSV.
  */
 export async function readUploadedFile(request: NextRequest, field = 'file'): Promise<Uint8Array> {
+  return (await readUpload(request, field)).bytes;
+}
+
+/**
+ * Comme `readUploadedFile`, mais rend aussi le **nom d'origine** : un gabarit
+ * téléversé doit pouvoir être retrouvé et retéléchargé par l'administration
+ * sous le nom qu'elle lui a donné.
+ */
+export async function readUpload(
+  request: NextRequest,
+  field = 'file',
+): Promise<{ bytes: Uint8Array; fileName: string }> {
   let form: FormData;
   try {
     form = await request.formData();
@@ -103,5 +115,5 @@ export async function readUploadedFile(request: NextRequest, field = 'file'): Pr
   if (!(file instanceof File)) {
     throw validationError(`Champ « ${field} » manquant ou invalide.`);
   }
-  return new Uint8Array(await file.arrayBuffer());
+  return { bytes: new Uint8Array(await file.arrayBuffer()), fileName: file.name };
 }

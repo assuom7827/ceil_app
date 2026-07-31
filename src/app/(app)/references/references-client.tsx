@@ -3,6 +3,20 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceManager } from '@/components/crud/resource-manager';
 import type { ResourceRecord } from '@/components/crud/fields';
+import { TemplateControl } from '@/components/documents/template-control';
+
+/** Gabarit d'attestation d'un modèle, tel que la liste le renvoie. */
+interface TemplateRow {
+  kind: string;
+  fileName: string;
+  updatedAt: string;
+}
+
+function certificateTemplate(row: ResourceRecord): TemplateRow | null {
+  const templates = row['templates'];
+  if (!Array.isArray(templates)) return null;
+  return (templates as TemplateRow[]).find((template) => template.kind === 'CERTIFICATE') ?? null;
+}
 
 export interface ReferencePermissions {
   faculty: boolean;
@@ -153,12 +167,27 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
         <ResourceManager
           endpoint="/api/diploma-models"
           title="Modèles de diplôme"
-          description="Un seul modèle par défaut actif : en désigner un nouveau retire le précédent."
+          description="Un seul modèle par défaut actif : en désigner un nouveau retire le précédent. Le gabarit ODT, préparé dans LibreOffice, porte la mise en page des attestations."
           canWrite={permissions.diplomaModel}
           columns={[
             { key: 'name', header: 'Nom' },
             { key: 'isDefault', header: 'Par défaut' },
             { key: 'disabled', header: 'Désactivé' },
+            {
+              key: 'templates',
+              header: 'Gabarit d’attestation (ODT)',
+              render: (row) => {
+                const template = certificateTemplate(row);
+                return (
+                  <TemplateControl
+                    modelId={String(row['id'])}
+                    fileName={template?.fileName ?? null}
+                    updatedAt={template?.updatedAt ?? null}
+                    canWrite={permissions.diplomaModel}
+                  />
+                );
+              },
+            },
           ]}
           fields={[
             { kind: 'text', name: 'name', label: 'Nom', required: true },

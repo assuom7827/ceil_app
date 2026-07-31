@@ -31,6 +31,8 @@ celle qui la remplace — savoir ce qui a été essayé évite de le réessayer.
 | [D-23](#d-23) | Lecture des dates de naissance : jour d'abord              | Accepté               |
 | [D-24](#d-24) | Mois arabes en convention algérienne                       | Accepté — à confirmer |
 | [D-25](#d-25) | La documentation du dépôt est la mémoire du projet         | Accepté               |
+| [D-26](#d-26) | L'attestation est un gabarit ODT téléversé                 | Accepté               |
+| [D-27](#d-27) | Le gabarit est stocké en base, pas sur un volume           | Accepté               |
 
 ---
 
@@ -408,3 +410,62 @@ qu'on refera autrement.
 
 **Conséquence** : toute évolution du modèle, d'une API, d'une convention ou
 d'une limite connue met à jour ces fichiers **dans le même commit**.
+
+## D-26
+
+### L'attestation de réussite est un gabarit ODT téléversé
+
+_2026-07-30 · Accepté_
+
+La mise en page de l'attestation ne vit plus dans le code. L'administration
+prépare un `.odt` dans LibreOffice Writer, y place des repères `{{…}}`, et le
+téléverse ; l'application ne remplit que les valeurs variables et confie la
+conversion PDF à LibreOffice en mode `--headless`.
+
+**Raison** : demande explicite de l'utilisateur — pouvoir changer le document
+rapidement, sans développeur. Un document officiel change au gré d'un texte
+réglementaire, d'un logo ou d'une signature ; l'attendre d'une livraison de code
+est une contrainte disproportionnée.
+
+**Alternatives écartées** :
+
+- _Gabarit HTML modifiable dans l'application_ : aucune dépendance système, mais
+  la mise en page ne se prépare plus dans LibreOffice — précisément ce que
+  l'utilisateur voulait éviter.
+- _Fond exporté en image + champs positionnés_ : sans dépendance non plus, mais
+  impose de régler une dizaine de positions à chaque nouveau fond.
+- _Conversion de l'ODT en HTML au téléversement_ : garderait l'impression dans le
+  navigateur, mais la conversion HTML de LibreOffice rend mal les cadres et fonds
+  décoratifs — la fidélité, seul intérêt du procédé, serait perdue.
+
+**Conséquence** : LibreOffice devient la **seule dépendance système** de
+l'application, confinée à `src/services/odt-render.ts`, et le principe « pas de
+PDF côté serveur » de [D-01](#d-01) ne vaut plus pour ce document. Les autres
+documents — procès-verbal, listes d'émargement — restent des pages HTML : leur
+mise en page est tabulaire, pas protocolaire.
+
+**Ce que les tests ont révélé** : sans `META-INF/manifest.xml`, LibreOffice
+**rend la main sans produire de PDF ni d'erreur**. Le manifeste est donc vérifié
+au téléversement, faute de quoi le défaut se découvrirait à l'impression. De
+même, deux conversions partageant un profil utilisateur se bloquent en silence :
+chaque conversion reçoit désormais un profil jetable.
+
+## D-27
+
+### Le gabarit est stocké en base, pas sur un volume
+
+_2026-07-30 · Accepté · migration `20260730000204_certificate_odt_template`_
+
+Table `document_templates`, colonne `content` en `BYTEA`, une entrée par modèle
+de diplôme et par type de document.
+
+**Raison** : une sauvegarde `pg_dump` suffit alors à restaurer les documents
+officiels, et un déploiement sans stockage partagé reste possible. Un fichier sur
+disque se serait désynchronisé de la base à la première restauration.
+
+**Conséquence** : le contenu ne doit **jamais** traverser une réponse de liste,
+où il serait sérialisé en base64 pour chaque modèle. Le CRUD des modèles de
+diplôme n'expose que les métadonnées ; le fichier a sa route de téléchargement.
+
+La taille et la liste des repères ne sont pas stockées : elles se relisent depuis
+`content`, conformément à la règle « aucune valeur dérivée en base ».

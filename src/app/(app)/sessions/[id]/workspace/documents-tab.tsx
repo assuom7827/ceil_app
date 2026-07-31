@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Award, ExternalLink, FileText, ScrollText, Users } from 'lucide-react';
+import { Award, ExternalLink, FileDown, FileText, ScrollText, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { apiGet } from '@/lib/api/client';
@@ -72,6 +72,8 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
   ];
 
   const listHref = `/print/sessions/${sessionId}/list${groupId ? `?groupId=${groupId}` : ''}`;
+  const certificatesHref = `/api/sessions/${sessionId}/certificates`;
+  const noAdmitted = admission && admission.admitted === 0;
 
   return (
     <div className="space-y-6">
@@ -101,6 +103,40 @@ export function DocumentsTab({ sessionId }: { sessionId: string }) {
             )}
           </li>
         ))}
+
+        <li className="rounded-md border p-4">
+          <p className="flex items-center gap-2 font-medium">
+            <FileDown className="size-4" />
+            Attestations de réussite (PDF)
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {admission?.admitted ?? 0} attestation(s), une page par admis, depuis le gabarit
+            LibreOffice du modèle de la session.
+          </p>
+
+          {noAdmitted ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Aucun admis pour l’instant : saisissez les notes puis recalculez.
+            </p>
+          ) : (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href={certificatesHref} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink />
+                  Ouvrir en PDF
+                </a>
+              </Button>
+              {/* L'ODT rempli permet une retouche avant impression — une faute de
+                  frappe dans un nom se corrige alors sans repasser par la base. */}
+              <Button asChild variant="ghost" size="sm">
+                <a href={`${certificatesHref}?format=odt`}>
+                  <FileDown />
+                  Télécharger l’ODT rempli
+                </a>
+              </Button>
+            </div>
+          )}
+        </li>
 
         <li className="rounded-md border p-4">
           <p className="flex items-center gap-2 font-medium">
