@@ -57,6 +57,7 @@ export interface DocumentPerson {
   levelId: string | null;
   groupName: string | null;
   teacherName: string | null;
+  gender: 'WOMAN' | 'MAN' | null;
   scores: {
     oralExpression: number | null;
     writtenExpression: number | null;
@@ -153,6 +154,7 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
           approximateBirth: true,
           birthPlace: true,
           arabBirthPlace: true,
+          gender: true,
         },
       },
     },
@@ -175,6 +177,7 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
       levelId: row.assignedLevel?.id ?? null,
       groupName: row.sessionGroup?.name ?? null,
       teacherName: row.sessionGroup?.teacher?.name ?? null,
+      gender: participant?.gender ?? null,
       scores: {
         oralExpression: row.oralExpression,
         writtenExpression: row.writtenExpression,

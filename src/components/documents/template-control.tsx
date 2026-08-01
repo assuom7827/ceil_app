@@ -22,11 +22,13 @@ interface UploadReport {
  */
 export function TemplateControl({
   modelId,
+  kind = 'CERTIFICATE',
   fileName,
   updatedAt,
   canWrite,
 }: {
   modelId: string;
+  kind?: 'CERTIFICATE' | 'ATTESTATION';
   fileName: string | null;
   updatedAt: string | null;
   canWrite: boolean;
@@ -41,7 +43,7 @@ export function TemplateControl({
   const [error, setError] = React.useState<string | null>(null);
   const [showHelp, setShowHelp] = React.useState(false);
 
-  const endpoint = `/api/diploma-models/${modelId}/template`;
+  const endpoint = `/api/diploma-models/${modelId}/template?kind=${kind}`;
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

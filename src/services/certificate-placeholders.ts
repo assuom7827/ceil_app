@@ -42,7 +42,26 @@ export const CERTIFICATE_PLACEHOLDERS: ReadonlyArray<PlaceholderDoc> = Object.fr
   { name: 'dateDelivranceInverse', description: 'Date d’édition, AAAA/MM/JJ' },
 ]);
 
-/** Noms acceptés, pour repérer une faute de frappe dans un gabarit. */
-export const KNOWN_PLACEHOLDER_NAMES: ReadonlySet<string> = new Set(
-  CERTIFICATE_PLACEHOLDERS.map((entry) => entry.name),
-);
+export const ATTESTATION_PLACEHOLDERS: ReadonlyArray<PlaceholderDoc> = Object.freeze([
+  { name: 'anneeUniversitaire', description: 'Année universitaire de la session' },
+  { name: 'institution', description: 'Nom de l’établissement / du centre' },
+  { name: 'civiliteArabe', description: 'السيد / السيدة, selon le sexe renseigné' },
+  { name: 'nomCompletArabe', description: 'Nom et prénom en arabe' },
+  { name: 'dateNaissance', description: 'Date de naissance, JJ/MM/AAAA' },
+  { name: 'dateNaissanceInverse', description: 'Date de naissance, AAAA/MM/JJ' },
+  { name: 'lieuNaissanceArabe', description: 'Lieu de naissance en arabe' },
+  { name: 'matricule', description: 'Matricule d’inscription à la session' },
+  { name: 'langue', description: 'Langue de la formation, en français' },
+  { name: 'langueArabe', description: 'Langue de la formation, en arabe' },
+  { name: 'niveau', description: 'Niveau CECRL de l’inscription' },
+  { name: 'groupe', description: 'Groupe de session ou d’examen' },
+  { name: 'lieuEdition', description: 'Lieu d’édition de l’attestation' },
+  { name: 'dateEdition', description: "Date d’édition, JJ/MM/AAAA" },
+  { name: 'dateEditionInverse', description: "Date d’édition, AAAA/MM/JJ" },
+  { name: 'directeur', description: 'Titre du signataire (ex. Le Directeur)' },
+]);
+
+export const KNOWN_PLACEHOLDER_NAMES: ReadonlySet<string> = new Set([
+  ...CERTIFICATE_PLACEHOLDERS.map((entry) => entry.name),
+  ...ATTESTATION_PLACEHOLDERS.map((entry) => entry.name),
+]);

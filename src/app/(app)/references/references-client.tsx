@@ -19,6 +19,12 @@ function certificateTemplate(row: ResourceRecord): TemplateRow | null {
   return (templates as TemplateRow[]).find((template) => template.kind === 'CERTIFICATE') ?? null;
 }
 
+function attestationTemplate(row: ResourceRecord): TemplateRow | null {
+  const templates = row['templates'];
+  if (!Array.isArray(templates)) return null;
+  return (templates as TemplateRow[]).find((template) => template.kind === 'ATTESTATION') ?? null;
+}
+
 export interface ReferencePermissions {
   faculty: boolean;
   speciality: boolean;
@@ -190,14 +196,25 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
               key: 'templates',
               header: t('references.colTemplate'),
               render: (row) => {
-                const template = certificateTemplate(row);
+                const certTemplate = certificateTemplate(row);
+                const attTemplate = attestationTemplate(row);
                 return (
-                  <TemplateControl
-                    modelId={String(row['id'])}
-                    fileName={template?.fileName ?? null}
-                    updatedAt={template?.updatedAt ?? null}
-                    canWrite={permissions.diplomaModel}
-                  />
+                  <div className="flex flex-col gap-2">
+                    <TemplateControl
+                      modelId={String(row['id'])}
+                      kind="CERTIFICATE"
+                      fileName={certTemplate?.fileName ?? null}
+                      updatedAt={certTemplate?.updatedAt ?? null}
+                      canWrite={permissions.diplomaModel}
+                    />
+                    <TemplateControl
+                      modelId={String(row['id'])}
+                      kind="ATTESTATION"
+                      fileName={attTemplate?.fileName ?? null}
+                      updatedAt={attTemplate?.updatedAt ?? null}
+                      canWrite={permissions.diplomaModel}
+                    />
+                  </div>
                 );
               },
             },

@@ -56,10 +56,11 @@ enum Gender {
 /// Type de document couvert par un gabarit ODT.
 ///
 /// Un seul type aujourd'hui : l'attestation de réussite. Les autres documents
-/// (procès-verbal, listes d'émargement) restent des pages HTML générées, leur
-/// mise en page étant tabulaire et non protocolaire.
+/// (procès-verbal, listes d'émargement, attestations d'inscription) restent des
+/// pages HTML générées, leur mise en page étant tabulaire et non protocolaire.
 enum DocumentTemplateKind {
   CERTIFICATE
+  ATTESTATION
 }
 
 /// État de verrouillage, partagé par TrainingSession et PositioningTest.
