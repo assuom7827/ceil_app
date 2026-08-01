@@ -229,14 +229,16 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
             { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
             { kind: 'checkbox', name: 'isDefault', label: t('references.fieldIsDefault') },
             {
-              kind: 'text',
+              kind: 'logo',
               name: 'universityLogo',
               label: t('references.fieldUniversityLogo'),
+              type: 'university',
             },
             {
-              kind: 'text',
+              kind: 'logo',
               name: 'associationLogo',
               label: t('references.fieldAssociationLogo'),
+              type: 'association',
             },
             {
               kind: 'text',
