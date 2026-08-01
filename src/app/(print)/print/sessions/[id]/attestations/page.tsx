@@ -56,30 +56,12 @@ export default async function AttestationsPage({
           {t('documentsTab.attestationsBlocked')}
         </p>
       ) : (
-        <div className="print-sheet space-y-4">
-          <div className="flex justify-center">
-            <Button asChild variant="default">
-              <a href={allPdfHref} target="_blank" rel="noopener noreferrer">
-                Télécharger toutes les attestations (PDF)
-              </a>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            <p className="text-center text-sm font-medium">Attestations individuelles :</p>
-            {people.map((person) => (
-              <a
-                key={person.enrollmentId}
-                href={`/api/sessions/${id}/attestation?enrollmentId=${person.enrollmentId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <p className="text-center text-sm">
-                  {person.fullName} — {t('enrollmentsTab.printAttestation')}
-                </p>
-              </a>
-            ))}
-          </div>
+        <div className="print-sheet flex justify-center">
+          <Button asChild variant="default">
+            <a href={allPdfHref} target="_blank" rel="noopener noreferrer">
+              Télécharger toutes les attestations (PDF)
+            </a>
+          </Button>
         </div>
       )}
     </>
