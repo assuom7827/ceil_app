@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ResourceManager } from '@/components/crud/resource-manager';
@@ -14,6 +15,7 @@ import { deriveParticipantFullName, deriveSessionTitle } from '@/services/derive
  * confirmation.
  */
 function ReceiptActions({ row, onDone }: { row: ResourceRecord; onDone: () => void }) {
+  const t = useTranslations();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const confirmed = row['state'] === 'CONFIRMED';
@@ -25,7 +27,7 @@ function ReceiptActions({ row, onDone }: { row: ResourceRecord; onDone: () => vo
       await apiPost(`/api/payment-receipts/${String(row['id'])}/${action}`);
       onDone();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'Action impossible.');
+      setError(caught instanceof ApiError ? caught.message : t('payments.actionImpossible'));
     } finally {
       setPending(false);
     }
@@ -39,7 +41,7 @@ function ReceiptActions({ row, onDone }: { row: ResourceRecord; onDone: () => vo
         disabled={pending}
         onClick={() => act(confirmed ? 'reset-to-draft' : 'confirm')}
       >
-        {confirmed ? 'Repasser en brouillon' : 'Confirmer'}
+        {confirmed ? t('payments.resetToDraft') : t('payments.confirm')}
       </Button>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </div>
@@ -47,6 +49,7 @@ function ReceiptActions({ row, onDone }: { row: ResourceRecord; onDone: () => vo
 }
 
 export function PaymentsClient({ canWrite }: { canWrite: boolean }) {
+  const t = useTranslations();
   // Forcer le rechargement de la liste après une action de cycle.
   const [version, setVersion] = React.useState(0);
 
@@ -54,16 +57,16 @@ export function PaymentsClient({ canWrite }: { canWrite: boolean }) {
     <ResourceManager
       key={version}
       endpoint="/api/payment-receipts"
-      title="Reçus de paiement"
-      description="Le numéro PAY-{année}-{n} est attribué automatiquement à la création."
+      title={t('payments.resourceTitle')}
+      description={t('payments.resourceDescription')}
       canWrite={canWrite}
-      searchPlaceholder="Numéro ou libellé…"
+      searchPlaceholder={t('payments.searchPlaceholder')}
       rowLabel={(row) => String(row['receiptNumber'] ?? '')}
       columns={[
-        { key: 'receiptNumber', header: 'Numéro' },
+        { key: 'receiptNumber', header: t('payments.colNumber') },
         {
           key: 'participant',
-          header: 'Participant',
+          header: t('payments.colParticipant'),
           render: (row) => {
             const participant = row['participant'];
             if (!participant || typeof participant !== 'object') return '—';
@@ -72,21 +75,21 @@ export function PaymentsClient({ canWrite }: { canWrite: boolean }) {
         },
         {
           key: 'trainingSession',
-          header: 'Session',
+          header: t('payments.colSession'),
           render: (row) => {
             const session = row['trainingSession'];
             if (!session || typeof session !== 'object') return '—';
             return deriveSessionTitle(session as never) || '—';
           },
         },
-        { key: 'amount', header: 'Montant', align: 'end' },
-        { key: 'paymentDate', header: 'Date' },
+        { key: 'amount', header: t('payments.colAmount'), align: 'end' },
+        { key: 'paymentDate', header: t('payments.colDate') },
         {
           key: 'state',
-          header: 'État',
+          header: t('payments.colState'),
           render: (row) => (
             <Badge variant={row['state'] === 'CONFIRMED' ? 'success' : 'outline'}>
-              {row['state'] === 'CONFIRMED' ? 'Confirmé' : 'Brouillon'}
+              {row['state'] === 'CONFIRMED' ? t('payments.confirmed') : t('payments.draft')}
             </Badge>
           ),
         },
@@ -94,7 +97,7 @@ export function PaymentsClient({ canWrite }: { canWrite: boolean }) {
           ? [
               {
                 key: 'cycle',
-                header: 'Cycle',
+                header: t('payments.colCycle'),
                 align: 'end' as const,
                 render: (row: ResourceRecord) => (
                   <ReceiptActions row={row} onDone={() => setVersion((v) => v + 1)} />
@@ -107,24 +110,24 @@ export function PaymentsClient({ canWrite }: { canWrite: boolean }) {
         {
           kind: 'reference',
           name: 'participantId',
-          label: 'Participant',
+          label: t('payments.fieldParticipant'),
           required: true,
           endpoint: '/api/participants',
           optionLabel: (item: ResourceRecord) =>
-            `${deriveParticipantFullName(item as never) || '(sans nom)'} — ${String(item['registrationNumber'] ?? '')}`,
+            `${deriveParticipantFullName(item as never) || t('payments.noName')} — ${String(item['registrationNumber'] ?? '')}`,
         },
         {
           kind: 'reference',
           name: 'trainingSessionId',
-          label: 'Session',
+          label: t('payments.fieldSession'),
           endpoint: '/api/sessions',
           optionLabel: (item: ResourceRecord) =>
             deriveSessionTitle(item as never) || String(item['code'] ?? item['id']),
         },
-        { kind: 'number', name: 'amount', label: 'Montant', required: true },
-        { kind: 'date', name: 'paymentDate', label: 'Date de paiement' },
-        { kind: 'textarea', name: 'memo', label: 'Libellé' },
-        { kind: 'checkbox', name: 'disabled', label: 'Désactivé' },
+        { kind: 'number', name: 'amount', label: t('payments.fieldAmount'), required: true },
+        { kind: 'date', name: 'paymentDate', label: t('payments.fieldPaymentDate') },
+        { kind: 'textarea', name: 'memo', label: t('payments.fieldMemo') },
+        { kind: 'checkbox', name: 'disabled', label: t('payments.fieldDisabled') },
       ]}
     />
   );

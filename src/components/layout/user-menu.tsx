@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 import { localeLabels, locales, type Locale } from '@/i18n/config';
 
 export interface UserMenuProps {
@@ -20,13 +21,8 @@ export interface UserMenuProps {
   setLocaleAction: (formData: FormData) => Promise<void>;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  MANAGER: 'Responsable',
-  ADMIN: 'Administrateur',
-  USER: 'Agent de saisie',
-};
-
 export function UserMenu({ user, locale, logoutAction, setLocaleAction }: UserMenuProps) {
+  const t = useTranslations();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -40,14 +36,14 @@ export function UserMenu({ user, locale, logoutAction, setLocaleAction }: UserMe
         <DropdownMenuLabel className="space-y-1">
           <div className="truncate font-semibold">{user.name}</div>
           <div className="truncate text-xs font-normal text-muted-foreground">{user.email}</div>
-          <Badge variant="secondary">{ROLE_LABELS[user.role] ?? user.role}</Badge>
+          <Badge variant="secondary">{t(`roles.${user.role}`)}</Badge>
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuLabel className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
           <Languages className="size-3.5" />
-          Langue
+          {t('userMenu.language')}
         </DropdownMenuLabel>
         {locales.map((value) => (
           <form key={value} action={setLocaleAction}>
@@ -68,7 +64,7 @@ export function UserMenu({ user, locale, logoutAction, setLocaleAction }: UserMe
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full text-start text-destructive">
               <LogOut className="size-4" />
-              Déconnexion
+              {t('userMenu.logout')}
             </button>
           </DropdownMenuItem>
         </form>

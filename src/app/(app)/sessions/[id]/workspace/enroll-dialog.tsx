@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Search, UserPlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -45,6 +46,7 @@ export function EnrollDialog({
   disabled: boolean;
   onEnrolled: () => void;
 }) {
+  const t = useTranslations();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [results, setResults] = React.useState<ParticipantSummary[]>([]);
@@ -141,28 +143,25 @@ export function EnrollDialog({
       <DialogTrigger asChild>
         <Button disabled={disabled}>
           <UserPlus />
-          Inscrire des participants
+          {t('enrollDialog.trigger')}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Inscrire des participants</DialogTitle>
-          <DialogDescription>
-            Sélectionnez des participants existants, créez-en à la volée, ou les deux — le tout part
-            en une seule opération.
-          </DialogDescription>
+          <DialogTitle>{t('enrollDialog.title')}</DialogTitle>
+          <DialogDescription>{t('enrollDialog.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          <Label htmlFor="participant-search">Rechercher (nom, prénom ou matricule)</Label>
+          <Label htmlFor="participant-search">{t('enrollDialog.searchLabel')}</Label>
           <div className="relative">
             <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="participant-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Au moins 2 caractères…"
+              placeholder={t('enrollDialog.searchPlaceholder')}
               className="ps-9"
             />
           </div>
@@ -170,11 +169,11 @@ export function EnrollDialog({
           <div className="max-h-56 overflow-y-auto rounded-md border">
             {searching ? (
               <p className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-                <Spinner /> Recherche…
+                <Spinner /> {t('enrollDialog.searching')}
               </p>
             ) : results.length === 0 ? (
               <p className="p-3 text-sm text-muted-foreground">
-                {query.trim().length < 2 ? 'Saisissez au moins 2 caractères.' : 'Aucun résultat.'}
+                {query.trim().length < 2 ? t('enrollDialog.minChars') : t('enrollDialog.noResults')}
               </p>
             ) : (
               <ul>
@@ -187,7 +186,7 @@ export function EnrollDialog({
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">
-                          {deriveParticipantFullName(participant) || '(sans nom)'}
+                          {deriveParticipantFullName(participant) || t('enrollDialog.noName')}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {participant.registrationNumber}
@@ -203,28 +202,28 @@ export function EnrollDialog({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Créer à la volée</Label>
+            <Label>{t('enrollDialog.createOnFly')}</Label>
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={() => setDrafts((previous) => [...previous, { ...EMPTY_DRAFT }])}
             >
-              Ajouter une ligne
+              {t('enrollDialog.addRow')}
             </Button>
           </div>
 
           {drafts.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aucun participant à créer. Utilisez la recherche ci-dessus pour les existants.
+              {t('enrollDialog.noneToCreate')}
             </p>
           ) : (
             <ul className="space-y-2">
               {drafts.map((draft, index) => (
                 <li key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   <Input
-                    aria-label="Nom"
-                    placeholder="Nom"
+                    aria-label={t('enrollDialog.familyName')}
+                    placeholder={t('enrollDialog.familyName')}
                     value={draft.familyName}
                     onChange={(event) =>
                       setDrafts((previous) =>
@@ -235,8 +234,8 @@ export function EnrollDialog({
                     }
                   />
                   <Input
-                    aria-label="Prénom"
-                    placeholder="Prénom"
+                    aria-label={t('enrollDialog.firstName')}
+                    placeholder={t('enrollDialog.firstName')}
                     value={draft.firstName}
                     onChange={(event) =>
                       setDrafts((previous) =>
@@ -247,8 +246,8 @@ export function EnrollDialog({
                     }
                   />
                   <Input
-                    aria-label="Téléphone"
-                    placeholder="Téléphone"
+                    aria-label={t('enrollDialog.phone')}
+                    placeholder={t('enrollDialog.phone')}
                     value={draft.phone}
                     onChange={(event) =>
                       setDrafts((previous) =>
@@ -259,7 +258,7 @@ export function EnrollDialog({
                     }
                   />
                   <select
-                    aria-label="Type"
+                    aria-label={t('enrollDialog.type')}
                     value={draft.type}
                     onChange={(event) =>
                       setDrafts((previous) =>
@@ -272,8 +271,8 @@ export function EnrollDialog({
                     }
                     className="h-10 rounded-md border border-input bg-background px-2 text-sm"
                   >
-                    <option value="STUDENT">Étudiant</option>
-                    <option value="TEACHER">Enseignant</option>
+                    <option value="STUDENT">{t('enrollDialog.student')}</option>
+                    <option value="TEACHER">{t('enrollDialog.teacher')}</option>
                   </select>
                   <Button
                     type="button"
@@ -282,7 +281,7 @@ export function EnrollDialog({
                       setDrafts((previous) => previous.filter((_, position) => position !== index))
                     }
                   >
-                    Retirer
+                    {t('enrollDialog.remove')}
                   </Button>
                 </li>
               ))}
@@ -294,11 +293,11 @@ export function EnrollDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
-            Annuler
+            {t('enrollDialog.cancel')}
           </Button>
           <Button onClick={submit} disabled={pending || totalToEnroll === 0}>
             {pending ? <Spinner /> : null}
-            Inscrire {totalToEnroll > 0 ? `(${totalToEnroll})` : ''}
+            {t('enrollDialog.submit')} {totalToEnroll > 0 ? `(${totalToEnroll})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>

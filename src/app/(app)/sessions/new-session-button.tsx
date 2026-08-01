@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ResourceForm, toFieldErrors } from '@/components/crud/resource-form';
 import { ApiError, apiPost } from '@/lib/api/client';
@@ -13,6 +14,7 @@ import { sessionFormFields } from './session-fields';
  * créer une session n'a d'intérêt que pour y travailler ensuite.
  */
 export function NewSessionButton({ canWrite }: { canWrite: boolean }) {
+  const t = useTranslations();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
@@ -31,7 +33,7 @@ export function NewSessionButton({ canWrite }: { canWrite: boolean }) {
       router.push(`/sessions/${created.id}/workspace`);
     } catch (caught) {
       setFieldErrors(toFieldErrors(caught));
-      setError(caught instanceof ApiError ? caught.message : 'Création impossible.');
+      setError(caught instanceof ApiError ? caught.message : t('common.creationImpossible'));
     } finally {
       setSubmitting(false);
     }
@@ -41,14 +43,14 @@ export function NewSessionButton({ canWrite }: { canWrite: boolean }) {
     <>
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Nouvelle session
+        {t('sessions.newButton')}
       </Button>
 
       <ResourceForm
         open={open}
         onOpenChange={setOpen}
-        title="Nouvelle session de formation"
-        description="Le titre est dérivé de la formation, du niveau et de l’année — il ne se saisit pas."
+        title={t('sessions.newTitle')}
+        description={t('sessions.newDescription')}
         record={null}
         submitting={submitting}
         error={error}

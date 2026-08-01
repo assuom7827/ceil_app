@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import {
   flexRender,
   getCoreRowModel,
@@ -205,9 +206,10 @@ export function EditableGrid<TRow>({
   onChange,
   readOnly = false,
   selection,
-  emptyLabel = 'Aucune ligne.',
+  emptyLabel,
   dirtyRowIds,
 }: EditableGridProps<TRow>) {
+  const t = useTranslations();
   const inputs = React.useRef(new Map<string, HTMLElement>());
   const editableColumns = React.useMemo(() => columns.filter(isEditable), [columns]);
 
@@ -346,7 +348,7 @@ export function EditableGrid<TRow>({
             <Checkbox
               checked={latest.current.allSelected}
               onCheckedChange={(checked) => current.onToggleAll(checked === true)}
-              aria-label="Tout sélectionner"
+              aria-label={t('common.selectAll')}
             />
           );
         },
@@ -358,7 +360,7 @@ export function EditableGrid<TRow>({
             <Checkbox
               checked={current.selected.has(id)}
               onCheckedChange={(checked) => current.onToggle(id, checked === true)}
-              aria-label="Sélectionner la ligne"
+              aria-label={t('common.selectRow')}
             />
           );
         },
@@ -471,7 +473,7 @@ export function EditableGrid<TRow>({
     latest.current.columns.map((column) => column.get(row)).join('');
 
   if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>;
+    return <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel ?? t('common.noLines')}</p>;
   }
 
   return (

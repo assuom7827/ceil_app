@@ -1,11 +1,13 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActor } from '@/lib/auth/session';
 import { LoginForm } from './login-form';
 
-export const metadata: Metadata = { title: 'Connexion' };
+export async function generateMetadata() {
+  const t = await getTranslations();
+  return { title: t('login.metaTitle') };
+}
 
 export default async function LoginPage({
   searchParams,
@@ -30,8 +32,8 @@ export default async function LoginPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Connexion</CardTitle>
-            <CardDescription>Accédez à la gestion des sessions du CEIL.</CardDescription>
+            <CardTitle>{t('login.title')}</CardTitle>
+            <CardDescription>{t('login.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoginForm from={from} />

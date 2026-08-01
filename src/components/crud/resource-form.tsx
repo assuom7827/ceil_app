@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -67,6 +68,7 @@ export function ResourceForm({
   fieldErrors: Record<string, string>;
   onSubmit: (payload: Record<string, unknown>) => void;
 }) {
+  const t = useTranslations();
   const [values, setValues] = React.useState<Record<string, FormValue>>({});
   const [options, setOptions] = React.useState<Record<string, ResourceRecord[]>>({});
 
@@ -199,7 +201,7 @@ export function ResourceForm({
                     ) : field.kind === 'multiReference' ? (
                       <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
                         {(options[field.name] ?? []).length === 0 ? (
-                          <p className="text-sm text-muted-foreground">Aucun élément disponible.</p>
+                          <p className="text-sm text-muted-foreground">{t('common.noItems')}</p>
                         ) : (
                           (options[field.name] ?? []).map((item) => {
                             const itemId = String(item['id']);
@@ -254,10 +256,10 @@ export function ResourceForm({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t('common.cancelAction')}
             </Button>
             <Button type="submit" disabled={submitting}>
-              Enregistrer
+              {t('common.saveAction')}
             </Button>
           </DialogFooter>
         </form>

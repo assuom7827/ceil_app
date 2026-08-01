@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
@@ -38,6 +39,7 @@ export function EnrollmentsTab({
   locked: boolean;
   onCountChange: (count: number) => void;
 }) {
+  const t = useTranslations();
   const [payload, setPayload] = React.useState<EnrollmentsPayload | null>(null);
   const [groups, setGroups] = React.useState<GroupRow[]>([]);
   const [drafts, setDrafts] = React.useState<Map<string, Draft>>(new Map());
@@ -95,56 +97,56 @@ export function EnrollmentsTab({
     () => [
       {
         key: 'registrationNumber',
-        header: 'Matricule',
+        header: t('enrollmentsTab.colRegistrationNumber'),
         kind: 'computed',
         get: (row) => row.registrationNumber ?? '—',
       },
       {
         key: 'participantNumber',
-        header: 'Matricule participant',
+        header: t('enrollmentsTab.colParticipantNumber'),
         kind: 'computed',
         get: (row) => row.participant.registrationNumber,
       },
       {
         key: 'fullName',
-        header: 'Participant',
+        header: t('enrollmentsTab.colParticipant'),
         kind: 'computed',
         // Dérivé par la même fonction que le serveur.
         get: (row) => deriveParticipantFullName(row.participant),
       },
       {
         key: 'kind',
-        header: 'Type',
+        header: t('enrollmentsTab.colType'),
         kind: 'select',
         get: (row) => drafts.get(row.id)?.kind ?? row.kind,
         options: [
-          { value: 'NEW', label: 'Nouveau' },
-          { value: 'RETURNING', label: 'Ancien' },
+          { value: 'NEW', label: t('enrollmentsTab.typeNew') },
+          { value: 'RETURNING', label: t('enrollmentsTab.typeReturning') },
         ],
       },
       {
         key: 'assignedLevelId',
-        header: 'Niveau attribué',
+        header: t('enrollmentsTab.colAssignedLevel'),
         kind: 'select',
         get: (row) => drafts.get(row.id)?.assignedLevelId ?? '',
         options: levels.map((level) => ({ value: level.id, label: level.name })),
       },
       {
         key: 'sessionGroupId',
-        header: 'Groupe session',
+        header: t('enrollmentsTab.colSessionGroup'),
         kind: 'select',
         get: (row) => drafts.get(row.id)?.sessionGroupId ?? '',
         options: groupOptions.session,
       },
       {
         key: 'examGroupId',
-        header: 'Groupe examen',
+        header: t('enrollmentsTab.colExamGroup'),
         kind: 'select',
         get: (row) => drafts.get(row.id)?.examGroupId ?? '',
         options: groupOptions.exam,
       },
     ],
-    [drafts, groupOptions, levels],
+    [drafts, groupOptions, levels, t],
   );
 
   async function saveAll() {
@@ -211,23 +213,23 @@ export function EnrollmentsTab({
           <EnrollDialog sessionId={sessionId} disabled={!editable} onEnrolled={load} />
 
           <Button onClick={saveAll} disabled={!editable || pending || dirty.size === 0}>
-            {pending ? <Spinner /> : <Save />}
-            Enregistrer tout {dirty.size > 0 ? `(${dirty.size})` : ''}
-          </Button>
+             {pending ? <Spinner /> : <Save />}
+             {t('enrollmentsTab.saveAll')} {dirty.size > 0 ? `(${dirty.size})` : ''}
+           </Button>
 
-          <Button
-            variant="outline"
-            onClick={removeSelected}
-            disabled={!editable || pending || selected.size === 0}
-          >
-            <Trash2 />
-            Retirer {selected.size > 0 ? `(${selected.size})` : ''}
-          </Button>
+           <Button
+             variant="outline"
+             onClick={removeSelected}
+             disabled={!editable || pending || selected.size === 0}
+           >
+             <Trash2 />
+             {t('enrollmentsTab.remove')} {selected.size > 0 ? `(${selected.size})` : ''}
+           </Button>
         </div>
 
         <ImportButton
           url={`/api/sessions/${sessionId}/import-enrollments`}
-          label="Importer des inscrits"
+          label={t('enrollmentsTab.importLabel')}
           disabled={!editable}
           onImported={load}
         />

@@ -10,9 +10,10 @@ import { login, type LoginState } from './actions';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const t = useTranslations();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Connexion…' : 'Se connecter'}
+      {pending ? t('login.pending') : t('login.submit')}
     </Button>
   );
 }
@@ -26,7 +27,7 @@ export function LoginForm({ from }: { from?: string }) {
       {from ? <input type="hidden" name="from" value={from} /> : null}
 
       <div className="space-y-2">
-        <Label htmlFor="email">Adresse e-mail</Label>
+        <Label htmlFor="email">{t('login.email')}</Label>
         <Input
           id="email"
           name="email"
@@ -44,7 +45,7 @@ export function LoginForm({ from }: { from?: string }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Mot de passe</Label>
+        <Label htmlFor="password">{t('login.password')}</Label>
         <Input
           id="password"
           name="password"

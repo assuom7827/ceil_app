@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResourceManager } from '@/components/crud/resource-manager';
 import type { ResourceRecord } from '@/components/crud/fields';
@@ -30,32 +31,33 @@ export interface ReferencePermissions {
 const asName = (item: ResourceRecord) => String(item['name'] ?? '');
 
 export function ReferencesClient({ permissions }: { permissions: ReferencePermissions }) {
+  const t = useTranslations();
   return (
     <Tabs defaultValue="faculties">
       <TabsList className="flex-wrap">
-        <TabsTrigger value="faculties">Facultés</TabsTrigger>
-        <TabsTrigger value="specialities">Spécialités</TabsTrigger>
-        <TabsTrigger value="teachers">Enseignants</TabsTrigger>
-        <TabsTrigger value="categories">Catégories</TabsTrigger>
-        <TabsTrigger value="levels">Niveaux CECRL</TabsTrigger>
-        <TabsTrigger value="diplomas">Modèles de diplôme</TabsTrigger>
+        <TabsTrigger value="faculties">{t('references.tabFaculties')}</TabsTrigger>
+        <TabsTrigger value="specialities">{t('references.tabSpecialities')}</TabsTrigger>
+        <TabsTrigger value="teachers">{t('references.tabTeachers')}</TabsTrigger>
+        <TabsTrigger value="categories">{t('references.tabCategories')}</TabsTrigger>
+        <TabsTrigger value="levels">{t('references.tabLevels')}</TabsTrigger>
+        <TabsTrigger value="diplomas">{t('references.tabDiplomas')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="faculties">
         <ResourceManager
           endpoint="/api/faculties"
-          title="Facultés"
-          description="Rattachement universitaire des participants."
+          title={t('references.faculties')}
+          description={t('references.facultiesDescription')}
           canWrite={permissions.faculty}
           columns={[
-            { key: 'name', header: 'Nom' },
-            { key: 'description', header: 'Description' },
-            { key: 'disabled', header: 'Désactivée' },
+            { key: 'name', header: t('references.colName') },
+            { key: 'description', header: t('references.colDescription') },
+            { key: 'disabled', header: t('references.colDisabled') },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true },
-            { kind: 'textarea', name: 'description', label: 'Description' },
-            { kind: 'checkbox', name: 'disabled', label: 'Désactivée' },
+            { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
+            { kind: 'textarea', name: 'description', label: t('references.fieldDescription') },
+            { kind: 'checkbox', name: 'disabled', label: t('references.fieldDisabled') },
           ]}
         />
       </TabsContent>
@@ -63,18 +65,18 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
       <TabsContent value="specialities">
         <ResourceManager
           endpoint="/api/specialities"
-          title="Spécialités"
+          title={t('references.specialities')}
           canWrite={permissions.speciality}
           columns={[
-            { key: 'name', header: 'Nom' },
-            { key: 'arName', header: 'Nom arabe' },
-            { key: 'disabled', header: 'Désactivée' },
+            { key: 'name', header: t('references.colName') },
+            { key: 'arName', header: t('references.colArName') },
+            { key: 'disabled', header: t('references.colDisabled') },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true },
-            { kind: 'text', name: 'arName', label: 'Nom arabe' },
-            { kind: 'textarea', name: 'description', label: 'Description' },
-            { kind: 'checkbox', name: 'disabled', label: 'Désactivée' },
+            { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
+            { kind: 'text', name: 'arName', label: t('references.fieldArName') },
+            { kind: 'textarea', name: 'description', label: t('references.fieldDescription') },
+            { kind: 'checkbox', name: 'disabled', label: t('references.fieldDisabled') },
           ]}
         />
       </TabsContent>
@@ -82,32 +84,32 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
       <TabsContent value="teachers">
         <ResourceManager
           endpoint="/api/teachers"
-          title="Enseignants"
+          title={t('references.teachers')}
           canWrite={permissions.teacher}
-          searchPlaceholder="Nom, e-mail ou téléphone…"
+          searchPlaceholder={t('references.teachersSearch')}
           columns={[
-            { key: 'name', header: 'Nom' },
-            { key: 'teacherType', header: 'Statut' },
-            { key: 'phone', header: 'Téléphone' },
-            { key: 'email', header: 'E-mail' },
-            { key: 'disabled', header: 'Désactivé' },
+            { key: 'name', header: t('references.colName') },
+            { key: 'teacherType', header: t('references.colStatus') },
+            { key: 'phone', header: t('references.colPhone') },
+            { key: 'email', header: t('references.colEmail') },
+            { key: 'disabled', header: t('references.colDisabled') },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true },
+            { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
             {
               kind: 'select',
               name: 'teacherType',
-              label: 'Statut',
+              label: t('references.fieldStatus'),
               required: true,
               options: [
-                { value: 'PERMANENT', label: 'Permanent' },
-                { value: 'VACATAIRE', label: 'Vacataire' },
+                { value: 'PERMANENT', label: t('references.fieldPermanent') },
+                { value: 'VACATAIRE', label: t('references.fieldVacataire') },
               ],
             },
-            { kind: 'text', name: 'phone', label: 'Téléphone' },
-            { kind: 'text', name: 'email', label: 'E-mail' },
-            { kind: 'textarea', name: 'description', label: 'Description' },
-            { kind: 'checkbox', name: 'disabled', label: 'Désactivé' },
+            { kind: 'text', name: 'phone', label: t('references.fieldPhone') },
+            { kind: 'text', name: 'email', label: t('references.fieldEmail') },
+            { kind: 'textarea', name: 'description', label: t('references.fieldDescription') },
+            { kind: 'checkbox', name: 'disabled', label: t('references.fieldDisabled') },
           ]}
         />
       </TabsContent>
@@ -115,17 +117,17 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
       <TabsContent value="categories">
         <ResourceManager
           endpoint="/api/student-categories"
-          title="Catégories de participant"
+          title={t('references.categories')}
           canWrite={permissions.studentCategory}
           columns={[
-            { key: 'name', header: 'Nom' },
-            { key: 'description', header: 'Description' },
-            { key: 'disabled', header: 'Désactivée' },
+            { key: 'name', header: t('references.colName') },
+            { key: 'description', header: t('references.colDescription') },
+            { key: 'disabled', header: t('references.colDisabled') },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true },
-            { kind: 'textarea', name: 'description', label: 'Description' },
-            { kind: 'checkbox', name: 'disabled', label: 'Désactivée' },
+            { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
+            { kind: 'textarea', name: 'description', label: t('references.fieldDescription') },
+            { kind: 'checkbox', name: 'disabled', label: t('references.fieldDisabled') },
           ]}
         />
       </TabsContent>
@@ -133,32 +135,43 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
       <TabsContent value="levels">
         <ResourceManager
           endpoint="/api/training-levels"
-          title="Niveaux CECRL"
-          description="Intervalle SEMI-OUVERT [minimum, maximum[ : un total égal au maximum bascule au niveau suivant."
+          title={t('references.levels')}
+          description={t('references.levelsDescription')}
           canWrite={permissions.trainingLevel}
           columns={[
-            { key: 'sequence', header: 'Ordre', align: 'end' },
-            { key: 'name', header: 'Niveau' },
+            { key: 'sequence', header: t('references.colOrder'), align: 'end' },
+            { key: 'name', header: t('references.colLevel') },
             {
               key: 'interval',
-              header: 'Intervalle',
+              header: t('references.colInterval'),
               render: (row) => `[${String(row['minimumPoints'])}, ${String(row['maximumPoints'])}[`,
             },
-            { key: 'disabled', header: 'Désactivé' },
+            { key: 'disabled', header: t('references.colDisabled') },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true, placeholder: 'B1.1' },
-            { kind: 'number', name: 'sequence', label: 'Ordre', required: true },
-            { kind: 'number', name: 'minimumPoints', label: 'Minimum (inclus)', required: true },
+            {
+              kind: 'text',
+              name: 'name',
+              label: t('references.fieldName'),
+              required: true,
+              placeholder: t('references.levelNamePlaceholder'),
+            },
+            { kind: 'number', name: 'sequence', label: t('references.fieldOrder'), required: true },
+            {
+              kind: 'number',
+              name: 'minimumPoints',
+              label: t('references.fieldMinInclusive'),
+              required: true,
+            },
             {
               kind: 'number',
               name: 'maximumPoints',
-              label: 'Maximum (exclu)',
+              label: t('references.fieldMaxExclusive'),
               required: true,
-              help: 'Doit être strictement supérieur au minimum.',
+              help: t('references.fieldMaxHelp'),
             },
-            { kind: 'textarea', name: 'description', label: 'Description' },
-            { kind: 'checkbox', name: 'disabled', label: 'Désactivé' },
+            { kind: 'textarea', name: 'description', label: t('references.fieldDescription') },
+            { kind: 'checkbox', name: 'disabled', label: t('references.fieldDisabled') },
           ]}
         />
       </TabsContent>
@@ -166,16 +179,16 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
       <TabsContent value="diplomas">
         <ResourceManager
           endpoint="/api/diploma-models"
-          title="Modèles de diplôme"
-          description="Un seul modèle par défaut actif : en désigner un nouveau retire le précédent. Le gabarit ODT, préparé dans LibreOffice, porte la mise en page des attestations."
+          title={t('references.diplomas')}
+          description={t('references.diplomasDescription')}
           canWrite={permissions.diplomaModel}
           columns={[
-            { key: 'name', header: 'Nom' },
-            { key: 'isDefault', header: 'Par défaut' },
-            { key: 'disabled', header: 'Désactivé' },
+            { key: 'name', header: t('references.colName') },
+            { key: 'isDefault', header: t('references.colDefault') },
+            { key: 'disabled', header: t('references.colDisabled') },
             {
               key: 'templates',
-              header: 'Gabarit d’attestation (ODT)',
+              header: t('references.colTemplate'),
               render: (row) => {
                 const template = certificateTemplate(row);
                 return (
@@ -190,17 +203,29 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
             },
           ]}
           fields={[
-            { kind: 'text', name: 'name', label: 'Nom', required: true },
-            { kind: 'checkbox', name: 'isDefault', label: 'Modèle par défaut' },
-            { kind: 'text', name: 'universityLogo', label: 'Logo université (URL)' },
-            { kind: 'text', name: 'associationLogo', label: 'Logo association (URL)' },
-            { kind: 'text', name: 'backgroundImage', label: 'Image de fond (URL)' },
-            { kind: 'textarea', name: 'heading', label: 'En-tête (HTML bilingue)' },
+            { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
+            { kind: 'checkbox', name: 'isDefault', label: t('references.fieldIsDefault') },
+            {
+              kind: 'text',
+              name: 'universityLogo',
+              label: t('references.fieldUniversityLogo'),
+            },
+            {
+              kind: 'text',
+              name: 'associationLogo',
+              label: t('references.fieldAssociationLogo'),
+            },
+            {
+              kind: 'text',
+              name: 'backgroundImage',
+              label: t('references.fieldBackgroundImage'),
+            },
+            { kind: 'textarea', name: 'heading', label: t('references.fieldHeading') },
             {
               kind: 'checkbox',
               name: 'disabled',
-              label: 'Désactivé',
-              help: 'Un modèle désactivé ne peut pas rester le modèle par défaut.',
+              label: t('references.fieldDisabled'),
+              help: t('references.fieldDisabledDefaultHelp'),
             },
           ]}
           rowLabel={asName}

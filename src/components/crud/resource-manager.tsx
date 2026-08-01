@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,10 +55,12 @@ export function ResourceManager({
   columns,
   fields,
   canWrite,
-  searchPlaceholder = 'Rechercher…',
+  searchPlaceholder,
   rowLabel = (row) => String(row['name'] ?? row['frName'] ?? row['id']),
   perPage = 25,
 }: ResourceManagerProps) {
+  const t = useTranslations();
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.searchDefault');
   const [page, setPage] = React.useState<Page | null>(null);
   const [pageNumber, setPageNumber] = React.useState(1);
   const [query, setQuery] = React.useState('');
@@ -87,11 +90,11 @@ export function ResourceManager({
       if (deferredQuery) search.set('q', deferredQuery);
       setPage(await apiGet<Page>(`${endpoint}?${search.toString()}`));
     } catch (error) {
-      setListError(error instanceof ApiError ? error.message : 'Chargement impossible.');
+      setListError(error instanceof ApiError ? error.message : t('common.loadingImpossible'));
     } finally {
       setLoading(false);
     }
-  }, [deferredQuery, endpoint, pageNumber, perPage]);
+  }, [deferredQuery, endpoint, pageNumber, perPage, t]);
 
   React.useEffect(() => {
     void load();
@@ -123,7 +126,7 @@ export function ResourceManager({
       await load();
     } catch (error) {
       setFieldErrors(toFieldErrors(error));
-      setFormError(error instanceof ApiError ? error.message : 'Enregistrement impossible.');
+      setFormError(error instanceof ApiError ? error.message : t('common.saveImpossible'));
     } finally {
       setSubmitting(false);
     }
@@ -131,13 +134,13 @@ export function ResourceManager({
 
   async function remove(row: ResourceRecord) {
     // Une suppression n'est jamais silencieuse : elle se confirme.
-    if (!window.confirm(`Supprimer « ${rowLabel(row)} » ? Cette action est irréversible.`)) return;
+    if (!window.confirm(t('common.removeConfirm', { label: rowLabel(row) }))) return;
 
     try {
       await apiDelete(`${endpoint}/${String(row['id'])}`);
       await load();
     } catch (error) {
-      setListError(error instanceof ApiError ? error.message : 'Suppression impossible.');
+      setListError(error instanceof ApiError ? error.message : t('common.deletionImpossible'));
     }
   }
 
@@ -154,10 +157,10 @@ export function ResourceManager({
         {canWrite ? (
           <Button onClick={openCreate}>
             <Plus />
-            Nouveau
+            {t('common.newButton')}
           </Button>
         ) : (
-          <p className="text-sm text-muted-foreground">Lecture seule pour votre rôle.</p>
+          <p className="text-sm text-muted-foreground">{t('common.readOnly')}</p>
         )}
       </div>
 
@@ -166,8 +169,8 @@ export function ResourceManager({
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={searchPlaceholder}
-          aria-label={searchPlaceholder}
+          placeholder={resolvedSearchPlaceholder}
+          aria-label={resolvedSearchPlaceholder}
           className="ps-9"
         />
       </div>
@@ -179,10 +182,10 @@ export function ResourceManager({
       ) : null}
 
       {loading && !page ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Chargement…</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t('common.loadingShort')}</p>
       ) : rows.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          {deferredQuery ? 'Aucun résultat pour cette recherche.' : 'Aucun élément.'}
+          {deferredQuery ? t('common.noResults') : t('common.noItems')}
         </p>
       ) : (
         <Table>
@@ -193,7 +196,7 @@ export function ResourceManager({
                   {column.header}
                 </TableHead>
               ))}
-              {canWrite ? <TableHead className="text-end">Actions</TableHead> : null}
+              {canWrite ? <TableHead className="text-end">{t('common.actions')}</TableHead> : null}
             </TableRow>
           </TableHeader>
 
@@ -216,7 +219,7 @@ export function ResourceManager({
                         size="sm"
                         variant="ghost"
                         onClick={() => openEdit(row)}
-                        aria-label={`Modifier ${rowLabel(row)}`}
+                        aria-label={t('table.modifyAria', { label: rowLabel(row) })}
                       >
                         <Pencil />
                       </Button>
@@ -224,7 +227,7 @@ export function ResourceManager({
                         size="sm"
                         variant="ghost"
                         onClick={() => remove(row)}
-                        aria-label={`Supprimer ${rowLabel(row)}`}
+                        aria-label={t('table.deleteAria', { label: rowLabel(row) })}
                         className="text-destructive"
                       >
                         <Trash2 />
@@ -241,7 +244,11 @@ export function ResourceManager({
       {page && page.meta.totalPages > 1 ? (
         <div className="flex items-center justify-between text-sm">
           <p className="text-muted-foreground">
-            {page.meta.total} élément(s) — page {page.meta.page} sur {page.meta.totalPages}
+            {t('pagination.info', {
+              total: page.meta.total,
+              page: page.meta.page,
+              totalPages: page.meta.totalPages,
+            })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -250,7 +257,7 @@ export function ResourceManager({
               disabled={page.meta.page <= 1}
               onClick={() => setPageNumber((current) => current - 1)}
             >
-              Précédent
+              {t('common.previous')}
             </Button>
             <Button
               size="sm"
@@ -258,7 +265,7 @@ export function ResourceManager({
               disabled={page.meta.page >= page.meta.totalPages}
               onClick={() => setPageNumber((current) => current + 1)}
             >
-              Suivant
+              {t('common.next')}
             </Button>
           </div>
         </div>
@@ -267,7 +274,11 @@ export function ResourceManager({
       <ResourceForm
         open={formOpen}
         onOpenChange={setFormOpen}
-        title={editing ? `Modifier — ${rowLabel(editing)}` : `Nouveau — ${title}`}
+        title={
+          editing
+            ? t('common.modifyLabel', { label: rowLabel(editing) })
+            : t('common.newLabel', { title })
+        }
         fields={fields}
         record={editing}
         submitting={submitting}
