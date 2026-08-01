@@ -1,5 +1,4 @@
 import { PrintToolbar } from '@/components/documents/print-toolbar';
-import { AttestationSheet } from '@/components/documents/sheets';
 import { prisma } from '@/lib/prisma';
 import { findCertificateTemplate } from '@/services/certificates';
 import { getAttestationDocument } from '@/services/documents';
@@ -24,7 +23,22 @@ export default async function AttestationsPage({
 
   const template = await findCertificateTemplate(prisma, id, 'ATTESTATION');
 
-  if (template && enrollmentId) {
+  if (!template) {
+    return (
+      <>
+        <PrintToolbar
+          title={t('documentsTab.attestationsTitle')}
+          subtitle={header.sessionTitle}
+        />
+        <p className="print-sheet flex items-center justify-center text-center text-sm">
+          Aucun gabarit d&apos;attestation d&apos;inscription n&apos;est configuré pour cette session.
+          Ajoutez-en un depuis Référentiels → Documents.
+        </p>
+      </>
+    );
+  }
+
+  if (enrollmentId) {
     redirect(`/api/sessions/${id}/attestation?enrollmentId=${enrollmentId}`);
   }
 
@@ -40,7 +54,17 @@ export default async function AttestationsPage({
         </p>
       ) : (
         people.map((person) => (
-          <AttestationSheet key={person.enrollmentId} header={header} person={person} />
+          <a
+            key={person.enrollmentId}
+            href={`/api/sessions/${id}/attestation?enrollmentId=${person.enrollmentId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="print-sheet"
+          >
+            <p className="text-center text-sm">
+              {person.fullName} — {t('enrollmentsTab.printAttestation')}
+            </p>
+          </a>
         ))
       )}
     </>

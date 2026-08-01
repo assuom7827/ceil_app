@@ -316,7 +316,6 @@
     "tabTeachers": "Enseignants",
     "tabCategories": "Catégories",
     "tabLevels": "Niveaux CECRL",
-    "tabDiplomas": "Modèles de diplôme",
     "colName": "Nom",
     "colArName": "Nom arabe",
     "colDescription": "Description",
@@ -358,7 +357,10 @@
     "fieldBackgroundImage": "Image de fond (URL)",
     "fieldHeading": "En-tête (HTML bilingue)",
     "fieldDisabledDefaultHelp": "Un modèle désactivé ne peut pas rester le modèle par défaut.",
-    "levelNamePlaceholder": "B1.1"
+    "levelNamePlaceholder": "B1.1",
+    "tabDocuments": "Documents officiels",
+    "colCertificateTemplate": "Gabarit Diplôme (ODT)",
+    "colAttestationTemplate": "Gabarit Attestation d’inscription (ODT)"
   },
   "workspace": {
     "tabEnrollments": "Inscrits",

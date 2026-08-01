@@ -316,7 +316,6 @@
     "tabTeachers": "الأساتذة",
     "tabCategories": "الفئات",
     "tabLevels": "مستويات CECRL",
-    "tabDiplomas": "نماذج الشهادات",
     "colName": "الاسم",
     "colArName": "الاسم بالعربية",
     "colDescription": "الوصف",
@@ -358,7 +357,10 @@
     "fieldBackgroundImage": "صورة الخلفية (URL)",
     "fieldHeading": "الترويسة (HTML ثنائي اللغة)",
     "fieldDisabledDefaultHelp": "لا يمكن للنموذج المعطّل أن يبقى النموذج الافتراضي.",
-    "levelNamePlaceholder": "B1.1"
+    "levelNamePlaceholder": "B1.1",
+    "tabDocuments": "الوثائق الرسمية",
+    "colCertificateTemplate": "قالب الشهادة (ODT)",
+    "colAttestationTemplate": "قالب شهادة التسجيل (ODT)"
   },
   "workspace": {
     "tabEnrollments": "المسجلون",

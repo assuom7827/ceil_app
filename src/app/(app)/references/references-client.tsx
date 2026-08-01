@@ -46,7 +46,7 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
         <TabsTrigger value="teachers">{t('references.tabTeachers')}</TabsTrigger>
         <TabsTrigger value="categories">{t('references.tabCategories')}</TabsTrigger>
         <TabsTrigger value="levels">{t('references.tabLevels')}</TabsTrigger>
-        <TabsTrigger value="diplomas">{t('references.tabDiplomas')}</TabsTrigger>
+          <TabsTrigger value="documents">{t('references.tabDocuments')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="faculties">
@@ -182,7 +182,7 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
         />
       </TabsContent>
 
-      <TabsContent value="diplomas">
+      <TabsContent value="documents">
         <ResourceManager
           endpoint="/api/diploma-models"
           title={t('references.diplomas')}
@@ -193,28 +193,34 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
             { key: 'isDefault', header: t('references.colDefault') },
             { key: 'disabled', header: t('references.colDisabled') },
             {
-              key: 'templates',
-              header: t('references.colTemplate'),
+              key: 'certificateTemplate',
+              header: t('references.colCertificateTemplate'),
               render: (row) => {
-                const certTemplate = certificateTemplate(row);
-                const attTemplate = attestationTemplate(row);
+                const template = certificateTemplate(row);
                 return (
-                  <div className="flex flex-col gap-2">
-                    <TemplateControl
-                      modelId={String(row['id'])}
-                      kind="CERTIFICATE"
-                      fileName={certTemplate?.fileName ?? null}
-                      updatedAt={certTemplate?.updatedAt ?? null}
-                      canWrite={permissions.diplomaModel}
-                    />
-                    <TemplateControl
-                      modelId={String(row['id'])}
-                      kind="ATTESTATION"
-                      fileName={attTemplate?.fileName ?? null}
-                      updatedAt={attTemplate?.updatedAt ?? null}
-                      canWrite={permissions.diplomaModel}
-                    />
-                  </div>
+                  <TemplateControl
+                    modelId={String(row['id'])}
+                    kind="CERTIFICATE"
+                    fileName={template?.fileName ?? null}
+                    updatedAt={template?.updatedAt ?? null}
+                    canWrite={permissions.diplomaModel}
+                  />
+                );
+              },
+            },
+            {
+              key: 'attestationTemplate',
+              header: t('references.colAttestationTemplate'),
+              render: (row) => {
+                const template = attestationTemplate(row);
+                return (
+                  <TemplateControl
+                    modelId={String(row['id'])}
+                    kind="ATTESTATION"
+                    fileName={template?.fileName ?? null}
+                    updatedAt={template?.updatedAt ?? null}
+                    canWrite={permissions.diplomaModel}
+                  />
                 );
               },
             },
