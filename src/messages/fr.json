@@ -401,7 +401,7 @@
     "removed": "{count} inscription(s) retirée(s).",
     "assigned": "{count} inscription(s) affectée(s).",
     "certificate": "Attestation",
-    "printCertificate": "Attestation d'inscription"
+    "printCertificate": "Diplôme"
   },
   "positioningTab": {
     "noTest": "Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l'écran « Tests de positionnement ».",
