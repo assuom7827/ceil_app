@@ -11,7 +11,7 @@ export function MainNav({ items }: { items: readonly NavItem[] }) {
   const t = useTranslations();
 
   return (
-    <nav aria-label="Navigation principale" className="flex flex-wrap items-center gap-1">
+    <nav aria-label={t('nav.mainNav')} className="flex flex-wrap items-center gap-1">
       {items.map((item) => {
         const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
@@ -20,7 +20,7 @@ export function MainNav({ items }: { items: readonly NavItem[] }) {
             <span
               key={item.href}
               aria-disabled="true"
-              title="Écran à venir"
+              title={t('nav.comingSoon')}
               className="cursor-not-allowed rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/50"
             >
               {t(item.labelKey)}

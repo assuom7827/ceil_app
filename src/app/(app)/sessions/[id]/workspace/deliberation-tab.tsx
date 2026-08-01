@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Calculator, ExternalLink, Save } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
@@ -44,11 +45,11 @@ function toNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function validateScore(value: string): string | null {
+function validateScore(t: (key: string) => string, value: string): string | null {
   if (value.trim() === '') return null;
   const parsed = toNumber(value);
   if (parsed === null) return 'Nombre attendu';
-  if (parsed < 0) return 'Négatif';
+  if (parsed < 0) return t('deliberationTab.negative');
   return null;
 }
 
@@ -63,6 +64,7 @@ export function DeliberationTab({
   locked: boolean;
   onAdmissionChange: (summary: AdmissionSummary) => void;
 }) {
+  const t = useTranslations();
   const [payload, setPayload] = React.useState<DeliberationPayload | null>(null);
   const [drafts, setDrafts] = React.useState<Map<string, Draft>>(new Map());
   const [dirty, setDirty] = React.useState<Set<string>>(new Set());
@@ -92,11 +94,6 @@ export function DeliberationTab({
 
   const threshold = payload?.admissionThreshold ?? 50;
 
-  /**
-   * Total et statut sont calculés ICI, dans le navigateur, par la MÊME fonction
-   * que le serveur (`deriveEntryTotalAndStatus`). Aucune règle d'admission n'est
-   * réécrite côté client, donc aucune divergence possible.
-   */
   const computed = React.useCallback(
     (row: DeliberationRow): { total: number | null; status: AdmissionStatus | null } => {
       const draft = drafts.get(row.enrollmentId);
@@ -119,19 +116,19 @@ export function DeliberationTab({
     const definitions: Array<GridColumn<DeliberationRow>> = [
       {
         key: 'registrationNumber',
-        header: 'Matricule',
+        header: t('deliberationMatricule'),
         kind: 'computed',
         get: (row) => row.enrollmentNumber ?? row.participant.registrationNumber,
       },
       {
         key: 'fullName',
-        header: 'Participant',
+        header: t('deliberationParticipant'),
         kind: 'computed',
         get: (row) => deriveParticipantFullName(row.participant),
       },
       {
         key: 'level',
-        header: 'Niveau',
+        header: t('deliberationLevel'),
         kind: 'computed',
         get: (row) => row.assignedLevel?.name ?? '—',
       },
@@ -144,14 +141,14 @@ export function DeliberationTab({
         kind: 'number',
         align: 'end',
         get: (row) => drafts.get(row.enrollmentId)?.[field.key] ?? '',
-        validate: validateScore,
+        validate: (value: string) => validateScore(t, value),
       });
     }
 
     definitions.push(
       {
         key: 'total',
-        header: 'Total',
+        header: t('deliberationTotalColumn'),
         kind: 'computed',
         align: 'end',
         get: (row) => computed(row).total?.toString() ?? '—',
@@ -161,17 +158,17 @@ export function DeliberationTab({
       },
       {
         key: 'status',
-        header: 'Statut',
+        header: t('deliberationStatusColumn'),
         kind: 'computed',
         get: (row) => computed(row).status ?? '',
         render: (row) => {
           const { status } = computed(row);
           if (status === null) {
-            return <span className="text-xs text-muted-foreground">Non délibéré</span>;
+            return <span className="text-xs text-muted-foreground">{t('deliberationNotDeliberated')}</span>;
           }
           return (
             <Badge variant={status === 'ADMITTED' ? 'success' : 'destructive'}>
-              {status === 'ADMITTED' ? 'Admis' : 'Ajourné'}
+              {status === 'ADMITTED' ? t('deliberationAdmitted') : t('deliberationRefused')}
             </Badge>
           );
         },
@@ -190,7 +187,7 @@ export function DeliberationTab({
             <Button asChild variant="ghost" size="sm">
               <a href={href} target="_blank" rel="noopener noreferrer">
                 <ExternalLink />
-                Attestation
+                {t('deliberationCertificate')}
               </a>
             </Button>
           );
@@ -199,7 +196,7 @@ export function DeliberationTab({
     );
 
     return definitions;
-  }, [computed, drafts, sessionId]);
+  }, [computed, drafts, sessionId, t]);
 
   async function saveAll() {
     if (!payload || dirty.size === 0) return;
@@ -271,7 +268,7 @@ export function DeliberationTab({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Seuil d’admission : <strong>{threshold}</strong>. Total et statut sont calculés en direct
+        Seuil d2019admission : <strong>{threshold}</strong>. Total et statut sont calculés en direct
         par la même fonction que le serveur. Collez directement depuis Excel : la sélection se
         remplit vers la droite et vers le bas.
       </p>

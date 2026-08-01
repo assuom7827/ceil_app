@@ -1,46 +1,48 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ResourceManager } from '@/components/crud/resource-manager';
 import type { ResourceRecord } from '@/components/crud/fields';
 
 export function TrainingsClient({ canWrite }: { canWrite: boolean }) {
+  const t = useTranslations();
   return (
     <ResourceManager
       endpoint="/api/trainings"
-      title="Formations"
-      description="Chaque formation propose une sélection de niveaux CECRL."
+      title={t('trainings.title')}
+      description={t('trainings.description')}
       canWrite={canWrite}
-      searchPlaceholder="Nom français, arabe ou code…"
+      searchPlaceholder={t('trainings.searchPlaceholder')}
       rowLabel={(row) => String(row['frName'] ?? '')}
       columns={[
-        { key: 'frName', header: 'Nom' },
-        { key: 'arName', header: 'Nom arabe' },
-        { key: 'code', header: 'Code' },
+        { key: 'frName', header: t('trainings.colName') },
+        { key: 'arName', header: t('trainings.colArName') },
+        { key: 'code', header: t('trainings.colCode') },
         {
           key: 'levels',
-          header: 'Niveaux',
+          header: t('trainings.colLevels'),
           render: (row) => {
             const levels = row['levels'];
             if (!Array.isArray(levels) || levels.length === 0) return '—';
-            return `${levels.length} niveau(x)`;
+            return t('trainings.levelsCount', { count: levels.length });
           },
         },
-        { key: 'disabled', header: 'Désactivée' },
+        { key: 'disabled', header: t('trainings.colDisabled') },
       ]}
       fields={[
-        { kind: 'text', name: 'frName', label: 'Nom français', required: true },
-        { kind: 'text', name: 'arName', label: 'Nom arabe' },
-        { kind: 'text', name: 'code', label: 'Code', placeholder: 'ANG' },
-        { kind: 'textarea', name: 'description', label: 'Description' },
+        { kind: 'text', name: 'frName', label: t('trainings.fieldFrName'), required: true },
+        { kind: 'text', name: 'arName', label: t('trainings.fieldArName') },
+        { kind: 'text', name: 'code', label: t('trainings.fieldCode'), placeholder: 'ANG' },
+        { kind: 'textarea', name: 'description', label: t('trainings.fieldDescription') },
         {
           kind: 'multiReference',
           name: 'levelIds',
-          label: 'Niveaux proposés',
+          label: t('trainings.fieldLevels'),
           endpoint: '/api/training-levels',
           optionLabel: (item: ResourceRecord) => String(item['name'] ?? ''),
-          help: 'La sélection remplace intégralement les niveaux existants.',
+          help: t('trainings.fieldLevelsHelp'),
         },
-        { kind: 'checkbox', name: 'disabled', label: 'Désactivée' },
+        { kind: 'checkbox', name: 'disabled', label: t('trainings.fieldDisabled') },
       ]}
     />
   );

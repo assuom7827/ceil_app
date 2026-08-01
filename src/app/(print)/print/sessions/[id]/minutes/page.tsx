@@ -1,10 +1,13 @@
-import type { Metadata } from 'next';
 import { PrintToolbar } from '@/components/documents/print-toolbar';
 import { MinutesSheets } from '@/components/documents/sheets';
 import { prisma } from '@/lib/prisma';
 import { getMinutesDocument } from '@/services/documents';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: 'Procès-verbal de délibération' };
+export async function generateMetadata() {
+  const t = await getTranslations();
+  return { title: t('documentsTab.minutesTitle') };
+}
 
 export default async function MinutesPage({
   params,
@@ -13,6 +16,7 @@ export default async function MinutesPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ levelId?: string }>;
 }) {
+  const t = await getTranslations();
   const { id } = await params;
   const { levelId } = await searchParams;
   const { header, people } = await getMinutesDocument(prisma, id, levelId);
@@ -24,8 +28,8 @@ export default async function MinutesPage({
   return (
     <>
       <PrintToolbar
-        title="Procès-verbal de délibération"
-        subtitle={`${header.sessionTitle}${levelSuffix} — ${people.length} inscrit(s)`}
+        title={t('documentsTab.minutesTitle')}
+        subtitle={`${header.sessionTitle}${levelSuffix} — ${people.length} ${t('common.noData').toLowerCase()}`}
       />
       <MinutesSheets header={header} people={people} />
     </>

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Save, Wand2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
@@ -42,6 +43,7 @@ export function PositioningTab({
   canWrite: boolean;
   locked: boolean;
 }) {
+  const t = useTranslations();
   const [tests, setTests] = React.useState<PositioningPayload['tests']>([]);
   const [testId, setTestId] = React.useState<string>('');
   const [payload, setPayload] = React.useState<PositioningPayload | null>(null);
@@ -98,7 +100,7 @@ export function PositioningTab({
     setDirty((previous) => new Set(previous).add(rowId));
   }, []);
 
-  /** Total et niveau résolu calculés par les fonctions dérivées du serveur. */
+  /** Total et niveau résolus calculés par les fonctions dérivées du serveur. */
   const computed = React.useCallback(
     (row: PositioningRow) => {
       const draft = drafts.get(row.enrollmentId);
@@ -117,13 +119,13 @@ export function PositioningTab({
     () => [
       {
         key: 'registrationNumber',
-        header: 'Matricule',
+        header: t('positioningMatricule'),
         kind: 'computed',
         get: (row) => row.enrollmentNumber ?? row.participant.registrationNumber,
       },
       {
         key: 'fullName',
-        header: 'Participant',
+        header: t('positioningParticipant'),
         kind: 'computed',
         get: (row) => deriveParticipantFullName(row.participant),
       },
@@ -143,7 +145,7 @@ export function PositioningTab({
       },
       {
         key: 'total',
-        header: 'Total',
+        header: t('positioningTotalColumn'),
         kind: 'computed',
         align: 'end',
         get: (row) => computed(row).total?.toString() ?? '—',
@@ -153,18 +155,18 @@ export function PositioningTab({
       },
       {
         key: 'resolvedLevel',
-        header: 'Niveau résolu',
+        header: t('positioningResolvedLevel'),
         kind: 'computed',
         get: (row) => computed(row).resolvedLevel?.name ?? '—',
       },
       {
         key: 'assignedLevel',
-        header: 'Niveau attribué',
+        header: t('positioningAssignedLevel'),
         kind: 'computed',
         get: (row) => row.assignedLevel?.name ?? '—',
       },
     ],
-    [computed, drafts],
+    [computed, drafts, t],
   );
 
   async function saveAll() {
@@ -211,8 +213,8 @@ export function PositioningTab({
   if (tests?.length === 0) {
     return (
       <p className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
-        Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l’écran
-        « Tests de positionnement ».
+         Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l&apos;écran
+         « Tests de positionnement ».
       </p>
     );
   }
@@ -262,8 +264,8 @@ export function PositioningTab({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Total = E.E + C.E. Le niveau résolu applique l’intervalle semi-ouvert de chaque niveau ; «
-        Déterminer les niveaux » l’inscrit dans le niveau attribué de chaque inscription.
+        Total = E.E + C.E. Le niveau résolu applique l&apos;intervalle semi-ouvert de chaque niveau ; «
+        Déterminer les niveaux » l&apos;inscrit dans le niveau attribué de chaque inscription.
       </p>
 
       <FeedbackBanner feedback={feedback} />

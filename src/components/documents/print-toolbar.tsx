@@ -2,12 +2,14 @@
 
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 /**
  * Barre d'action des pages imprimables. Masquée à l'impression (`no-print`)
  * pour ne pas apparaître sur le papier.
  */
 export function PrintToolbar({ title, subtitle }: { title: string; subtitle?: string }) {
+  const t = useTranslations();
   return (
     <div className="no-print sticky top-0 z-10 mb-6 border-b bg-background/95 px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-[210mm] flex-wrap items-center justify-between gap-3">
@@ -17,11 +19,11 @@ export function PrintToolbar({ title, subtitle }: { title: string; subtitle?: st
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => window.close()}>
-            Fermer
+            {t('printToolbar.close')}
           </Button>
           <Button onClick={() => window.print()}>
             <Printer />
-            Imprimer
+            {t('printToolbar.print')}
           </Button>
         </div>
       </div>

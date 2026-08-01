@@ -7,10 +7,13 @@ import { prisma } from '@/lib/prisma';
 import { computeAdmission } from '@/services/deliberation';
 import { deriveSessionTitle } from '@/services/derive';
 
-export const metadata: Metadata = { title: 'Tableau de bord' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations();
+  return { title: t('nav.dashboard') };
+}
 
 /** Les compteurs viennent des mêmes services que l'API : aucun calcul parallèle. */
-async function loadStats() {
+async function loadStats(noTitle: string) {
   const [participants, openSessions, lockedSessions, confirmedReceipts, recent] = await Promise.all(
     [
       prisma.participant.count(),
@@ -36,7 +39,7 @@ async function loadStats() {
   const sessions = await Promise.all(
     recent.map(async (session) => ({
       id: session.id,
-      title: deriveSessionTitle(session) || 'Session sans titre',
+      title: deriveSessionTitle(session) || noTitle,
       state: session.state,
       enrollments: session._count.enrollments,
       admission: await computeAdmission(prisma, session.id),
@@ -62,28 +65,26 @@ function Kpi({ label, value }: { label: string; value: number }) {
 export default async function DashboardPage() {
   await requireActor();
   const t = await getTranslations();
-  const stats = await loadStats();
+  const stats = await loadStats(t('session.noTitle'));
 
   return (
     <main className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t('nav.dashboard')}</h1>
-        <p className="text-muted-foreground">Vue d’ensemble de l’activité du centre.</p>
+        <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label={t('nav.participants')} value={stats.participants} />
-        <Kpi label="Sessions ouvertes" value={stats.openSessions} />
-        <Kpi label="Sessions verrouillées" value={stats.lockedSessions} />
-        <Kpi label="Reçus confirmés" value={stats.confirmedReceipts} />
+        <Kpi label={t('dashboard.openSessions')} value={stats.openSessions} />
+        <Kpi label={t('dashboard.lockedSessions')} value={stats.lockedSessions} />
+        <Kpi label={t('dashboard.confirmedReceipts')} value={stats.confirmedReceipts} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Sessions récentes</CardTitle>
-          <CardDescription>
-            Les admis sont calculés à la lecture, selon le seuil propre à chaque session.
-          </CardDescription>
+          <CardTitle>{t('dashboard.recentSessions')}</CardTitle>
+          <CardDescription>{t('dashboard.recentDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {stats.sessions.length === 0 ? (
@@ -93,12 +94,12 @@ export default async function DashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
-                    <th className="py-2 text-start font-medium">Session</th>
-                    <th className="py-2 text-start font-medium">État</th>
-                    <th className="py-2 text-end font-medium">Inscrits</th>
+                    <th className="py-2 text-start font-medium">{t('dashboard.colSession')}</th>
+                    <th className="py-2 text-start font-medium">{t('dashboard.colState')}</th>
+                    <th className="py-2 text-end font-medium">{t('dashboard.colEnrollments')}</th>
                     <th className="py-2 text-end font-medium">{t('scores.admitted')}</th>
                     <th className="py-2 text-end font-medium">{t('scores.refused')}</th>
-                    <th className="py-2 text-end font-medium">Non délibérés</th>
+                    <th className="py-2 text-end font-medium">{t('dashboard.colPending')}</th>
                   </tr>
                 </thead>
                 <tbody>

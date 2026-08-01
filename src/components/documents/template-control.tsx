@@ -5,6 +5,7 @@ import { Download, FileText, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiError, apiDelete } from '@/lib/api/client';
 import { CERTIFICATE_PLACEHOLDERS } from '@/services/certificate-placeholders';
+import { useTranslations } from 'next-intl';
 
 interface UploadReport {
   fileName: string;
@@ -30,6 +31,7 @@ export function TemplateControl({
   updatedAt: string | null;
   canWrite: boolean;
 }) {
+  const t = useTranslations();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [current, setCurrent] = React.useState<{ fileName: string; updatedAt: string } | null>(
     fileName ? { fileName, updatedAt: updatedAt ?? '' } : null,
@@ -55,13 +57,13 @@ export function TemplateControl({
       const payload: unknown = await response.json();
       if (!response.ok) {
         const message = (payload as { message?: string }).message;
-        throw new Error(message ?? 'Téléversement impossible.');
+        throw new Error(message ?? t('templateControl.uploadImpossible'));
       }
       const saved = payload as UploadReport & { updatedAt: string };
       setReport(saved);
       setCurrent({ fileName: saved.fileName, updatedAt: saved.updatedAt });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Téléversement impossible.');
+      setError(caught instanceof Error ? caught.message : t('templateControl.uploadImpossible'));
     } finally {
       setPending(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -69,7 +71,7 @@ export function TemplateControl({
   }
 
   async function remove() {
-    if (!window.confirm('Retirer le gabarit ? Les attestations repasseront en HTML.')) return;
+    if (!window.confirm(t('templateControl.removeConfirm'))) return;
     setPending(true);
     setError(null);
     try {
@@ -102,12 +104,12 @@ export function TemplateControl({
             {current.fileName}
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground">Aucun gabarit</span>
+          <span className="text-sm text-muted-foreground">{t('templateControl.noTemplate')}</span>
         )}
 
         {current ? (
           <Button size="sm" variant="ghost" asChild>
-            <a href={endpoint} download aria-label={`Télécharger ${current.fileName}`}>
+            <a href={endpoint} download aria-label={t('templateControl.downloadAria', { fileName: current.fileName })}>
               <Download />
             </a>
           </Button>
@@ -122,7 +124,7 @@ export function TemplateControl({
               onClick={() => inputRef.current?.click()}
             >
               <Upload />
-              {current ? 'Remplacer' : 'Téléverser'}
+              {current ? t('templateControl.replace') : t('templateControl.upload')}
             </Button>
             {current ? (
               <Button
@@ -131,7 +133,7 @@ export function TemplateControl({
                 disabled={pending}
                 onClick={remove}
                 className="text-destructive"
-                aria-label="Retirer le gabarit"
+                aria-label={t('templateControl.removeAria')}
               >
                 <Trash2 />
               </Button>
@@ -140,7 +142,7 @@ export function TemplateControl({
         ) : null}
 
         <Button size="sm" variant="ghost" onClick={() => setShowHelp((shown) => !shown)}>
-          {showHelp ? 'Masquer les repères' : 'Repères disponibles'}
+          {showHelp ? t('templateControl.hideHelp') : t('templateControl.showHelp')}
         </Button>
       </div>
 
@@ -153,13 +155,16 @@ export function TemplateControl({
       {report ? (
         <div role="status" className="space-y-1 rounded-md bg-muted p-2 text-sm">
           <p className="font-medium">
-            {report.placeholders.length} repère(s) reconnu(s) — {Math.round(report.byteSize / 1024)}{' '}
-            Ko
+            {t('templateControl.reportRecognized', {
+              count: report.placeholders.length,
+              size: Math.round(report.byteSize / 1024),
+            })}
           </p>
           {report.unknownPlaceholders.length > 0 ? (
             <p className="text-destructive">
-              Repères inconnus, qui s’imprimeront tels quels :{' '}
-              {report.unknownPlaceholders.map((name) => `{{${name}}}`).join(', ')}
+              {t('templateControl.unknownPlaceholders', {
+                list: report.unknownPlaceholders.map((name) => `{{${name}}}`).join(', '),
+              })}
             </p>
           ) : null}
         </div>
@@ -167,10 +172,7 @@ export function TemplateControl({
 
       {showHelp ? (
         <div className="rounded-md border bg-card p-3 text-sm">
-          <p className="mb-2 text-muted-foreground">
-            Écrivez ces repères dans votre fichier LibreOffice ; l’application les remplace à
-            l’édition. Tout le reste — logos, cadre, signature — vous appartient.
-          </p>
+          <p className="mb-2 text-muted-foreground">{t('templateControl.helpText')}</p>
           <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
             {CERTIFICATE_PLACEHOLDERS.map((entry) => (
               <div key={entry.name} className="flex gap-2">

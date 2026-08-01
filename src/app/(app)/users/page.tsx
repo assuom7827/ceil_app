@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireActor } from '@/lib/auth/session';
@@ -6,13 +7,10 @@ import { prisma } from '@/lib/prisma';
 import { forbiddenError } from '@/services/errors';
 import { canRead } from '@/services/rbac';
 
-export const metadata: Metadata = { title: 'Comptes' };
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Administrateur',
-  MANAGER: 'Responsable',
-  USER: 'Agent de saisie',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations();
+  return { title: t('users.title') };
+}
 
 /**
  * Administration des comptes — réservée à ADMIN.
@@ -22,9 +20,23 @@ const ROLE_LABELS: Record<string, string> = {
  */
 export default async function UsersPage() {
   const actor = await requireActor();
+  const t = await getTranslations();
   if (!canRead(actor, 'User')) {
-    throw forbiddenError('Cette page est réservée aux administrateurs.', { role: actor.role });
+    throw forbiddenError(t('users.forbidden'), { role: actor.role });
   }
+
+  const roleLabel = (role: string): string => {
+    switch (role) {
+      case 'ADMIN':
+        return t('roles.ADMIN');
+      case 'MANAGER':
+        return t('roles.MANAGER');
+      case 'USER':
+        return t('roles.USER');
+      default:
+        return role;
+    }
+  };
 
   const users = await prisma.user.findMany({
     orderBy: { name: 'asc' },
@@ -34,15 +46,17 @@ export default async function UsersPage() {
   return (
     <main className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Comptes</h1>
-        <p className="text-muted-foreground">Utilisateurs autorisés à accéder à l’application.</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('users.title')}</h1>
+        <p className="text-muted-foreground">{t('users.subtitle')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{users.length} compte(s)</CardTitle>
+          <CardTitle>{t('users.count', { count: users.length })}</CardTitle>
           <CardDescription>
-            La création et la modification passent par <code>/api/users</code>.
+            {t.rich('users.createdVia', {
+              code: (chunks) => <code>{chunks}</code>,
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -50,10 +64,10 @@ export default async function UsersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="py-2 text-start font-medium">Nom</th>
-                  <th className="py-2 text-start font-medium">E-mail</th>
-                  <th className="py-2 text-start font-medium">Rôle</th>
-                  <th className="py-2 text-start font-medium">État</th>
+                  <th className="py-2 text-start font-medium">{t('users.colName')}</th>
+                  <th className="py-2 text-start font-medium">{t('users.colEmail')}</th>
+                  <th className="py-2 text-start font-medium">{t('users.colRole')}</th>
+                  <th className="py-2 text-start font-medium">{t('users.colState')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -61,10 +75,10 @@ export default async function UsersPage() {
                   <tr key={user.id} className="border-b last:border-0">
                     <td className="py-2 font-medium">{user.name}</td>
                     <td className="py-2 text-muted-foreground">{user.email}</td>
-                    <td className="py-2">{ROLE_LABELS[user.role] ?? user.role}</td>
+                    <td className="py-2">{roleLabel(user.role)}</td>
                     <td className="py-2">
                       <Badge variant={user.active ? 'success' : 'outline'}>
-                        {user.active ? 'Actif' : 'Désactivé'}
+                        {user.active ? t('users.active') : t('users.inactive')}
                       </Badge>
                     </td>
                   </tr>

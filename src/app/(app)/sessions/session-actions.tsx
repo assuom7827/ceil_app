@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ResourceForm, toFieldErrors } from '@/components/crud/resource-form';
 import type { ResourceRecord } from '@/components/crud/fields';
@@ -21,6 +22,7 @@ export function SessionActions({
   canWrite: boolean;
   enrollmentCount: number;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const [editing, setEditing] = React.useState(false);
   const [record, setRecord] = React.useState<ResourceRecord | null>(null);
@@ -52,7 +54,7 @@ export function SessionActions({
       };
       setRecord(flattened);
     } catch (caught) {
-      setEditError(caught instanceof ApiError ? caught.message : 'Session introuvable.');
+      setEditError(caught instanceof ApiError ? caught.message : t('common.sessionNotFound'));
     }
   }
 
@@ -66,7 +68,7 @@ export function SessionActions({
       router.refresh();
     } catch (caught) {
       setFieldErrors(toFieldErrors(caught));
-      setEditError(caught instanceof ApiError ? caught.message : 'Modification impossible.');
+      setEditError(caught instanceof ApiError ? caught.message : t('common.modificationImpossible'));
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +76,7 @@ export function SessionActions({
 
   async function remove() {
     if (!canDelete) return;
-    if (!window.confirm('Supprimer cette session ? Cette action est irréversible.')) return;
+    if (!window.confirm(t('common.deleteConfirm'))) return;
     try {
       await apiDelete(`/api/sessions/${sessionId}`);
       router.refresh();
@@ -82,7 +84,7 @@ export function SessionActions({
       const message =
         caught instanceof ApiError
           ? caught.message
-          : 'Suppression impossible : des inscriptions sont liées à cette session.';
+          : t('common.deleteImpossible');
       window.alert(message);
     }
   }
@@ -90,7 +92,7 @@ export function SessionActions({
   return (
     <>
       <div className="flex justify-end gap-1">
-        <Button size="sm" variant="ghost" onClick={openEdit} aria-label="Modifier">
+        <Button size="sm" variant="ghost" onClick={openEdit} aria-label={t('common.modify')}>
           <Pencil />
         </Button>
         {canDelete ? (
@@ -98,7 +100,7 @@ export function SessionActions({
             size="sm"
             variant="ghost"
             onClick={remove}
-            aria-label="Supprimer"
+            aria-label={t('common.delete')}
             className="text-destructive"
           >
             <Trash2 />
@@ -108,9 +110,9 @@ export function SessionActions({
             size="sm"
             variant="ghost"
             disabled
-            aria-label="Suppression bloquée — des inscrits sont liés"
+            aria-label={t('common.deletionBlocked')}
             className="text-muted-foreground"
-            title="Suppression bloquée : des inscrits sont liés à cette session."
+            title={t('sessions.deleteBlockedTitle')}
           >
             <Trash2 />
           </Button>
@@ -122,7 +124,7 @@ export function SessionActions({
         onOpenChange={(open) => {
           if (!open) setEditing(false);
         }}
-        title="Modifier la session"
+        title={t('sessions.editTitle')}
         record={record}
         submitting={submitting}
         error={editError}

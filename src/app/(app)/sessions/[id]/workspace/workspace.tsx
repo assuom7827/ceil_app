@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DeliberationTab } from './deliberation-tab';
 import { DocumentsTab } from './documents-tab';
@@ -24,6 +25,7 @@ export function Workspace({
   session: WorkspaceSession;
   permissions: WorkspacePermissions;
 }) {
+  const t = useTranslations();
   const [session, setSession] = React.useState(initialSession);
   const [enrollmentCount, setEnrollmentCount] = React.useState(0);
   const [groupCount, setGroupCount] = React.useState(0);
@@ -42,11 +44,11 @@ export function Workspace({
 
       <Tabs defaultValue="enrollments">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="enrollments">Inscrits</TabsTrigger>
-          <TabsTrigger value="positioning">Positionnement</TabsTrigger>
-          <TabsTrigger value="groups">Groupes</TabsTrigger>
-          <TabsTrigger value="deliberation">Notes / Délibération</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="enrollments">{t('workspace.tabEnrollments')}</TabsTrigger>
+          <TabsTrigger value="positioning">{t('workspace.tabPositioning')}</TabsTrigger>
+          <TabsTrigger value="groups">{t('workspace.tabGroups')}</TabsTrigger>
+          <TabsTrigger value="deliberation">{t('workspace.tabDeliberation')}</TabsTrigger>
+          <TabsTrigger value="documents">{t('workspace.tabDocuments')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrollments">

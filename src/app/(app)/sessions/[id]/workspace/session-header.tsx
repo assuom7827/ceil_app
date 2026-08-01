@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Lock, LockOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ export function SessionHeader({
   counters,
   onSessionChanged,
 }: SessionHeaderProps) {
+  const t = useTranslations();
   const { pending, feedback, run } = useAction();
   const [threshold, setThreshold] = React.useState(String(session.admissionThreshold));
   const locked = session.state === 'LOCKED';
@@ -36,7 +38,7 @@ export function SessionHeader({
       const action = locked ? 'unlock' : 'lock';
       await apiPost(`/api/sessions/${session.id}/${action}`);
       onSessionChanged({ state: locked ? 'OPEN' : 'LOCKED' });
-      return locked ? 'Session déverrouillée.' : 'Session verrouillée.';
+      return locked ? t('session.unlockedMessage') : t('session.lockedMessage');
     });
   }
 
@@ -54,7 +56,7 @@ export function SessionHeader({
         admissionThreshold: value,
       });
       onSessionChanged({ admissionThreshold: value });
-      return `Seuil d’admission fixé à ${value}.`;
+      return t('session.thresholdSaved', { value });
     });
   }
 
@@ -65,7 +67,7 @@ export function SessionHeader({
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">{session.title}</h1>
             <Badge variant={locked ? 'outline' : 'secondary'} data-testid="session-state">
-              {locked ? 'Verrouillée' : 'Ouverte'}
+              {locked ? t('session.state.locked') : t('session.state.open')}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -83,7 +85,7 @@ export function SessionHeader({
             disabled={pending}
           >
             {pending ? <Spinner /> : locked ? <LockOpen /> : <Lock />}
-            {locked ? 'Déverrouiller' : 'Verrouiller'}
+            {locked ? t('session.unlock') : t('session.lock')}
           </Button>
         ) : null}
       </div>
@@ -91,7 +93,7 @@ export function SessionHeader({
       <div className="flex flex-wrap items-end gap-6">
         <div className="space-y-1">
           <Label htmlFor="threshold" className="text-xs text-muted-foreground">
-            Seuil d’admission
+            {t('sessionHeader.thresholdLabel')}
           </Label>
           <Input
             id="threshold"
@@ -104,19 +106,18 @@ export function SessionHeader({
           />
         </div>
 
-        <Counter label="Inscrits" value={counters.enrollments} />
-        <Counter label="Groupes" value={counters.groups} />
-        <Counter label="Admis" value={counters.admission?.admitted ?? null} />
-        <Counter label="Ajournés" value={counters.admission?.refused ?? null} />
-        <Counter label="Non délibérés" value={counters.admission?.pending ?? null} muted />
+        <Counter label={t('session.counterEnrollments')} value={counters.enrollments} />
+        <Counter label={t('session.counterGroups')} value={counters.groups} />
+        <Counter label={t('session.counterAdmitted')} value={counters.admission?.admitted ?? null} />
+        <Counter label={t('session.counterRefused')} value={counters.admission?.refused ?? null} />
+        <Counter label={t('session.counterPending')} value={counters.admission?.pending ?? null} muted />
       </div>
 
       <FeedbackBanner feedback={feedback} />
 
       {locked ? (
         <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-          Session verrouillée : les grilles sont en lecture seule. Déverrouillez-la pour reprendre
-          la saisie.
+          {t('sessionHeader.lockedNotice')}
         </p>
       ) : null}
     </header>

@@ -64,11 +64,14 @@ export function readPath(row: ResourceRecord, path: string): unknown {
 /** Valeur affichable d'une cellule, sans jamais rendre `[object Object]`. */
 export function displayValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
+  // TODO i18n: 'Oui'/'Non' hors contexte React (fonction pure), à traduire ultérieurement.
   if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+  // TODO i18n: format de date 'fr-FR' figé, à localiser ultérieurement.
   if (value instanceof Date) return value.toLocaleDateString('fr-FR');
   if (typeof value === 'string') {
     // Les dates arrivent en ISO depuis l'API.
     const isoDate = /^\d{4}-\d{2}-\d{2}T/.exec(value);
+    // TODO i18n: format de date 'fr-FR' figé, à localiser ultérieurement.
     if (isoDate) return new Date(value).toLocaleDateString('fr-FR');
     return value;
   }

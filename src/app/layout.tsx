@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Inter, Amiri } from 'next/font/google';
 import { localeDirection, type Locale } from '@/i18n/config';
 import './globals.css';
@@ -13,19 +13,21 @@ const amiri = Amiri({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'CEIL — Université Abdelhamid Ibn Badis – Mostaganem',
-    template: '%s · CEIL',
-  },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
-  description:
-    "Gestion du Centre d'Enseignement Intensif des Langues — inscriptions, positionnement, délibérations et documents officiels.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations();
+  return {
+    title: {
+      default: t('app.title'),
+      template: '%s · CEIL',
+    },
+    icons: {
+      icon: '/favicon.ico',
+      shortcut: '/favicon.ico',
+      apple: '/apple-touch-icon.png',
+    },
+    description: t('app.description'),
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = (await getLocale()) as Locale;
