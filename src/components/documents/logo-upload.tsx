@@ -66,17 +66,17 @@ export function LogoUpload({ modelId, type, currentUrl, onUploaded, onRemoved }:
         {currentUrl ? (
           <>
             <img src={currentUrl} alt="" className="h-12 w-auto object-contain border rounded" />
-            <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={pending}>
+            <Button type="button" size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={pending}>
               {t('templateControl.replace')}
             </Button>
             {onRemoved && (
-              <Button size="sm" variant="ghost" onClick={onRemoved} disabled={pending} className="text-destructive">
+              <Button type="button" size="sm" variant="ghost" onClick={onRemoved} disabled={pending} className="text-destructive">
                 {t('templateControl.removeAria').replace('Retirer le gabarit', 'Supprimer')}
               </Button>
             )}
           </>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={pending}>
+          <Button type="button" size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={pending}>
             {t('templateControl.upload')}
           </Button>
         )}
