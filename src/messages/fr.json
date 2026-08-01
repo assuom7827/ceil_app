@@ -399,7 +399,9 @@
     "empty": "Aucun inscrit. Utilisez « Inscrire des participants ».",
     "updated": "{count} inscription(s) mise(s) à jour.",
     "removed": "{count} inscription(s) retirée(s).",
-    "assigned": "{count} inscription(s) affectée(s)."
+    "assigned": "{count} inscription(s) affectée(s).",
+    "certificate": "Attestation",
+    "printCertificate": "Attestation d'inscription"
   },
   "positioningTab": {
     "noTest": "Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l'écran « Tests de positionnement ».",
@@ -548,7 +550,17 @@
   },
   "userMenu": {
     "language": "Langue",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMinLength": "10 caractères minimum",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordChanged": "Mot de passe modifié avec succès",
+    "passwordChangeError": "Erreur lors du changement de mot de passe",
+    "changePasswordDescription": "Mettre à jour votre mot de passe",
+    "cancel": "Annuler"
   },
   "printToolbar": {
     "close": "Fermer",

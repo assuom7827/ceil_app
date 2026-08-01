@@ -399,7 +399,9 @@
     "empty": "لا يوجد مسجلون. استخدم « تسجيل مشاركين ».",
     "updated": "تم تحديث {count} تسجيل.",
     "removed": "تمت إزالة {count} تسجيل.",
-    "assigned": "تم تعيين {count} تسجيل."
+    "assigned": "تم تعيين {count} تسجيل.",
+    "certificate": "شهادة",
+    "printCertificate": "شهادة تسجيل"
   },
   "positioningTab": {
     "noTest": "لا يوجد اختبار تحديد مستوى لتكوين هذه الدورة. أنشئ واحداً من شاشة « اختبارات تحديد المستوى ».",
@@ -548,7 +550,17 @@
   },
   "userMenu": {
     "language": "اللغة",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "passwordMinLength": "10 أحرف على الأقل",
+    "passwordMismatch": "كلمتا المرور غير متطابقتين",
+    "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+    "passwordChangeError": "خطأ في تغيير كلمة المرور",
+    "changePasswordDescription": "تحديث كلمة المرور الخاصة بك",
+    "cancel": "إلغاء"
   },
   "printToolbar": {
     "close": "إغلاق",
