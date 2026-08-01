@@ -401,7 +401,7 @@
     "removed": "تمت إزالة {count} تسجيل.",
     "assigned": "تم تعيين {count} تسجيل.",
     "certificate": "شهادة",
-    "printCertificate": "شهادة نجاح"
+    "printAttestation": "شهادة تسجيل"
   },
   "positioningTab": {
     "noTest": "لا يوجد اختبار تحديد مستوى لتكوين هذه الدورة. أنشئ واحداً من شاشة « اختبارات تحديد المستوى ».",

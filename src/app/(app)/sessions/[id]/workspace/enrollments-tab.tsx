@@ -152,12 +152,12 @@ export function EnrollmentsTab({
         get: () => '',
         align: 'end',
         render: (row) => {
-          const href = `/api/sessions/${sessionId}/certificates?enrollmentId=${row.id}`;
+          const href = `/print/sessions/${sessionId}/attestations?enrollmentId=${row.id}`;
           return (
             <Button asChild variant="ghost" size="sm">
               <a href={href} target="_blank" rel="noopener noreferrer">
                 <ExternalLink />
-                {t('enrollmentsTab.printCertificate')}
+                {t('enrollmentsTab.printAttestation')}
               </a>
             </Button>
           );
