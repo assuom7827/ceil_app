@@ -255,7 +255,7 @@ export function repeatBody(contentXml: string, copies: number): string {
 
   const [, open, inner, close] = match as unknown as [string, string, string, string];
   const declarations = DECLARATIONS.exec(inner)?.[0] ?? '';
-  const body = inner.slice(declarations.length);
+  const body = inner.slice(declarations.length).replace(new RegExp(`<text:p text:style-name="${PAGE_BREAK_STYLE}"/>`, 'g'), '');
 
   const breakParagraph = `<text:p text:style-name="${PAGE_BREAK_STYLE}"/>`;
   const repeated = Array.from({ length: copies }, (_, position) =>
@@ -318,7 +318,7 @@ function splitCopies(
   const pieces = inner.slice(declarations.length).split(marker);
   return {
     prefix: prefix + declarations,
-    body: pieces.map((piece, position) => (position === 0 ? piece : marker + piece)),
+    body: pieces.map((piece, position) => (position === 0 ? piece : marker + piece)).filter((piece) => piece.trim() !== ''),
     suffix,
   };
 }
