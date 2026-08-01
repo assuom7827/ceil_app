@@ -51,6 +51,7 @@ export interface DocumentPerson {
   fullName: string;
   arabicFullName: string;
   birth: string | null;
+  birthDate: Date | null;
   birthPlace: string | null;
   arabicBirthPlace: string | null;
   levelName: string | null;
@@ -171,6 +172,7 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
       fullName: deriveParticipantFullName(row.participant),
       arabicFullName: deriveParticipantArabicFullName(row.participant),
       birth: participant ? deriveBirthDisplay(participant) : null,
+      birthDate: participant?.birthDate ?? null,
       birthPlace: participant?.birthPlace ?? null,
       arabicBirthPlace: participant?.arabBirthPlace ?? null,
       levelName: row.assignedLevel?.name ?? null,

@@ -128,7 +128,7 @@ export function attestationValues(
     civiliteArabe: arabicCivility(person.gender),
     nomCompletArabe: text(person.arabicFullName) || text(person.fullName),
     dateNaissance: text(person.birth),
-    dateNaissanceInverse: '',
+    dateNaissanceInverse: person.birthDate ? formatDate(person.birthDate, true) : '',
     lieuNaissanceArabe: text(person.arabicBirthPlace) || text(person.birthPlace),
     matricule: text(person.registrationNumber),
     langue: text(header.trainingFr),
