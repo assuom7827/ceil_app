@@ -8,12 +8,26 @@ import type { DocumentHeader, DocumentPerson, GroupListDocument } from '@/servic
  * administrateur authentifié, pas une saisie d'utilisateur final.
  */
 function OfficialHeader({ header }: { header: DocumentHeader }) {
-  if (header.model?.heading) {
+  let headingHtml = header.model?.heading ?? null;
+
+  if (headingHtml && header.model) {
+    const universityLogo = header.model.universityLogo ?? '';
+    const associationLogo = header.model.associationLogo ?? '';
+
+    if (universityLogo) {
+      headingHtml = headingHtml.replace(/\{\{universityLogo\}\}/g, universityLogo);
+    }
+    if (associationLogo) {
+      headingHtml = headingHtml.replace(/\{\{associationLogo\}\}/g, associationLogo);
+    }
+  }
+
+  if (headingHtml) {
     return (
       <header className="mb-8 space-y-3">
         <div
           className="text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: header.model.heading }}
+          dangerouslySetInnerHTML={{ __html: headingHtml }}
         />
         <hr className="border-black/40" />
       </header>
