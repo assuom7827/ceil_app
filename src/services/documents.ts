@@ -162,7 +162,14 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
   });
   const birthByEnrollment = new Map(births.map((row) => [row.id, row.participant]));
 
-  return deliberation.rows.map((row) => {
+  const seen = new Set<string>();
+  const uniqueRows = deliberation.rows.filter((row) => {
+    if (seen.has(row.enrollmentId)) return false;
+    seen.add(row.enrollmentId);
+    return true;
+  });
+
+  return uniqueRows.map((row) => {
     const participant = birthByEnrollment.get(row.enrollmentId);
 
     return {
