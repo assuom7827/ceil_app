@@ -254,7 +254,7 @@ export function MinutesSheets({
             <p className="text-lg font-bold uppercase">Procès-verbal de délibération</p>
             <SessionLine header={header} levelName={filteredLevel} />
             <p className="text-xs text-black/60">
-              Seuil d2019admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
+              Seuil d&apos;admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
               {pages.length}
             </p>
           </div>
