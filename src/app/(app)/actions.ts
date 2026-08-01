@@ -26,7 +26,7 @@ export async function setLocale(formData: FormData): Promise<void> {
   revalidatePath('/', 'layout');
 }
 
-export async function changePassword(formData: FormData): Promise<{ error?: string; success?: string }> {
+export async function changePassword(formData: FormData): Promise<{ error?: string; success?: string; mustLogout?: boolean }> {
   const actor = await getActor();
   if (!actor) return { error: 'Unauthorized' };
 
@@ -35,27 +35,27 @@ export async function changePassword(formData: FormData): Promise<{ error?: stri
   const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
   if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: 'All fields are required' };
+    return { error: 'userMenu.passwordRequired' };
   }
 
   if (newPassword !== confirmPassword) {
-    return { error: 'Passwords do not match' };
+    return { error: 'userMenu.passwordMismatch' };
   }
 
   if (newPassword.length < 10) {
-    return { error: 'Password must be at least 10 characters' };
+    return { error: 'userMenu.passwordMinLength' };
   }
 
   const user = await prisma.user.findUnique({ where: { id: actor.id } });
-  if (!user) return { error: 'User not found' };
+  if (!user) return { error: 'userMenu.userNotFound' };
 
   const valid = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!valid) {
-    return { error: 'Current password is incorrect' };
+    return { error: 'userMenu.currentPasswordIncorrect' };
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: actor.id }, data: { passwordHash } });
 
-  return { success: 'Password changed successfully' };
+  return { success: 'userMenu.passwordChanged', mustLogout: true };
 }

@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { changePassword } from '@/app/(app)/actions';
+import { changePassword, logout } from '@/app/(app)/actions';
 
 export function ChangePasswordDialog({
   open,
@@ -37,11 +37,15 @@ export function ChangePasswordDialog({
     const result = await changePassword(formData);
 
     if (result.error) {
-      setError(result.error);
+      setError(t(result.error));
     } else if (result.success) {
-      setSuccess(result.success);
-      onOpenChange(false);
-      event.currentTarget.reset();
+      setSuccess(t(result.success));
+      if (result.mustLogout) {
+        await logout();
+      } else {
+        onOpenChange(false);
+        event.currentTarget.reset();
+      }
     }
 
     setPending(false);

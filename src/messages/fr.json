@@ -560,7 +560,10 @@
     "passwordChanged": "Mot de passe modifié avec succès",
     "passwordChangeError": "Erreur lors du changement de mot de passe",
     "changePasswordDescription": "Mettre à jour votre mot de passe",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "passwordRequired": "Tous les champs sont requis",
+    "userNotFound": "Utilisateur introuvable",
+    "currentPasswordIncorrect": "Mot de passe actuel incorrect"
   },
   "printToolbar": {
     "close": "Fermer",
