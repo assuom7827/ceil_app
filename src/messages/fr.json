@@ -367,7 +367,8 @@
     "tabPositioning": "Positionnement",
     "tabGroups": "Groupes",
     "tabDeliberation": "Notes / Délibération",
-    "tabDocuments": "Documents"
+    "tabDocuments": "Documents",
+    "tabExport": "Export"
   },
   "sessionHeader": {
     "matriculePrefix": "matricules {prefix}-…",
@@ -502,6 +503,17 @@
     "listScopeLabel": "Périmètre",
     "listAllSession": "Toute la session",
     "examSuffix": " (examen)"
+  },
+  "exportTab": {
+    "intro": "Exportez les données brutes de la session en CSV ou Excel pour les ouvrir dans un tableur, les archiver ou les transmettre. Le CSV contient la première feuille ; l'Excel inclut toutes les feuilles (ex. : composition des groupes).",
+    "enrollments": "Inscrits",
+    "enrollmentsDesc": "Liste de tous les inscrits avec leurs informations, niveaux, groupes et coordonnées.",
+    "scores": "Notes / Délibération",
+    "scoresDesc": "Grille complète des notes (E.O, E.E, C.O, C.E), totaux et statuts d'admission.",
+    "groups": "Groupes",
+    "groupsDesc": "Composition des groupes de session et d'examen, avec enseignants, sites et horaires.",
+    "xlsxFmt": "Excel (.xlsx)",
+    "csvFmt": "CSV (.csv)"
   },
   "enrollDialog": {
     "trigger": "Inscrire des participants",

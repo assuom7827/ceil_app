@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { Inter, Amiri } from 'next/font/google';
 import { localeDirection, type Locale } from '@/i18n/config';
+import { defaultTheme } from '@/lib/theme';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -34,7 +35,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={localeDirection[locale]} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={localeDirection[locale]}
+      suppressHydrationWarning
+      className={defaultTheme === 'dark' ? 'dark' : undefined}
+    >
       <body className={`${inter.variable} ${amiri.variable} min-h-screen antialiased`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
