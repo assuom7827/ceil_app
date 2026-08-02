@@ -346,7 +346,7 @@ export function injectQrCodes(
     if (!qr) return '';
     const fileName = `Pictures/qr-${qr.enrollmentId}.png`;
     entries[fileName] = qr.data;
-    return `<draw:frame draw:name="QR-${qr.enrollmentId}" draw:style-name="fr1" draw:width="3cm" draw:height="3cm"><draw:image xlink:href="${fileName}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>`;
+    return `<draw:frame draw:name="QR-${qr.enrollmentId}" draw:width="3cm" draw:height="3cm" draw:z-index="0"><draw:image xlink:href="${fileName}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>`;
   });
 
   entries['content.xml'] = strToU8(content);
