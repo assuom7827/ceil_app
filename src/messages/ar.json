@@ -565,7 +565,10 @@
     "cancel": "إلغاء",
     "passwordRequired": "جميع الحقول مطلوبة",
     "userNotFound": "المستخدم غير موجود",
-    "currentPasswordIncorrect": "كلمة المرور الحالية غير صحيحة"
+    "currentPasswordIncorrect": "كلمة المرور الحالية غير صحيحة",
+    "theme": "المظهر",
+    "darkMode": "الوضع الداكن",
+    "lightMode": "الوضع الفاتح"
   },
   "printToolbar": {
     "close": "إغلاق",
