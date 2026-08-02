@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DeliberationTab } from './deliberation-tab';
 import { DocumentsTab } from './documents-tab';
 import { EnrollmentsTab } from './enrollments-tab';
+import { ExportTab } from './export-tab';
 import { GroupsTab } from './groups-tab';
 import { PositioningTab } from './positioning-tab';
 import { SessionHeader } from './session-header';
@@ -49,6 +50,7 @@ export function Workspace({
           <TabsTrigger value="groups">{t('workspace.tabGroups')}</TabsTrigger>
           <TabsTrigger value="deliberation">{t('workspace.tabDeliberation')}</TabsTrigger>
           <TabsTrigger value="documents">{t('workspace.tabDocuments')}</TabsTrigger>
+          <TabsTrigger value="export">{t('workspace.tabExport')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrollments">
@@ -84,6 +86,10 @@ export function Workspace({
 
         <TabsContent value="documents">
           <DocumentsTab sessionId={session.id} />
+        </TabsContent>
+
+        <TabsContent value="export">
+          <ExportTab sessionId={session.id} />
         </TabsContent>
       </Tabs>
     </div>

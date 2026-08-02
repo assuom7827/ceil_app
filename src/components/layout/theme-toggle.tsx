@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Moon, Sun } from 'lucide-react';
+import { defaultTheme } from '@/lib/theme';
 
 export function ThemeToggle() {
   const t = useTranslations();
@@ -15,8 +14,7 @@ export function ThemeToggle() {
   React.useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = saved ?? (prefersDark ? 'dark' : 'light');
+    const initial = saved ?? defaultTheme;
     setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
   }, []);
