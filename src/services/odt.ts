@@ -321,3 +321,47 @@ function splitCopies(
     suffix,
   };
 }
+
+/**
+ * Injecte des QR codes comme images dans un ODT rendu.
+ *
+ * Chaque `{{qrCode}}` dans content.xml est remplacé par une balise
+ * `<draw:frame><draw:image .../></draw:frame>` pointant vers un fichier
+ * `Pictures/qr-{enrollmentId}.png` ajouté à l'archive.
+ *
+ * manifest.xml est mis à jour en conséquence.
+ */
+export function injectQrCodes(
+  file: Uint8Array,
+  qrCodes: ReadonlyArray<{ enrollmentId: string; data: Uint8Array }>,
+): Uint8Array {
+  if (qrCodes.length === 0) return file;
+
+  const entries = readOdt(file);
+  let content = strFromU8(entries['content.xml']!);
+
+  let qrIndex = 0;
+  content = content.replace(/\{\{qrCode\}\}/g, () => {
+    const qr = qrCodes[qrIndex++];
+    if (!qr) return '';
+    const fileName = `Pictures/qr-${qr.enrollmentId}.png`;
+    entries[fileName] = qr.data;
+    return `<draw:frame draw:name="QR-${qr.enrollmentId}" draw:style-name="fr1" draw:width="2cm" draw:height="2cm"><draw:image xlink:href="${fileName}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>`;
+  });
+
+  entries['content.xml'] = strToU8(content);
+
+  let manifest = entries['META-INF/manifest.xml'] ? strFromU8(entries['META-INF/manifest.xml']!) : '';
+  for (const qr of qrCodes) {
+    const fileName = `Pictures/qr-${qr.enrollmentId}.png`;
+    if (!manifest.includes(fileName)) {
+      manifest = manifest.replace(
+        '</manifest:manifest>',
+        `<manifest:file-entry manifest:full-path="${fileName}" manifest:media-type="image/png"/></manifest:manifest>`,
+      );
+    }
+  }
+  entries['META-INF/manifest.xml'] = strToU8(manifest);
+
+  return writeOdt(entries);
+}

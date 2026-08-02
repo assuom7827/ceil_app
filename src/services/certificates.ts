@@ -19,7 +19,7 @@ import {
   KNOWN_PLACEHOLDER_NAMES,
   type PlaceholderDoc,
 } from './certificate-placeholders';
-import { fillTemplateMany, listTemplatePlaceholders } from './odt';
+import { fillTemplateMany, injectQrCodes, listTemplatePlaceholders } from './odt';
 import QRCode from 'qrcode';
 
 /**
@@ -42,15 +42,15 @@ function formatDate(value: Nullable<Date>, inverse = false): string {
   return inverse ? `${year}/${month}/${day}` : `${day}/${month}/${year}`;
 }
 
-async function generateQrCode(verificationUrl: string): Promise<string> {
+async function generateQrCode(verificationUrl: string): Promise<Uint8Array | null> {
   try {
-    return await QRCode.toDataURL(verificationUrl, {
+    return await QRCode.toBuffer(verificationUrl, {
       width: 200,
       margin: 1,
       errorCorrectionLevel: 'M',
     });
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -130,32 +130,39 @@ export interface CertificateReport {
   unresolved: string[];
 }
 
+export interface AttestationValuesResult {
+  values: Record<string, string>;
+  qrCode: Uint8Array | null;
+}
+
 export async function attestationValues(
   header: DocumentHeader,
   person: DocumentPerson,
   now: Date = new Date(),
-): Promise<Record<string, string>> {
+): Promise<AttestationValuesResult> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const verificationUrl = `${baseUrl}/verify/${header.sessionId}/${person.enrollmentId}`;
   const qrCode = await generateQrCode(verificationUrl);
 
   return {
-    anneeUniversitaire: text(header.academicYear),
-    institution: 'Université Abdelhamid Ibn Badis — Mostaganem',
-    civiliteArabe: arabicCivility(person.gender),
-    nomCompletArabe: text(person.arabicFullName) || text(person.fullName),
-    dateNaissance: text(person.birth),
-    dateNaissanceInverse: person.birthDate ? formatDate(person.birthDate, true) : '',
-    lieuNaissanceArabe: text(person.arabicBirthPlace) || text(person.birthPlace),
-    matricule: text(person.registrationNumber),
-    langue: text(header.trainingFr),
-    langueArabe: text(header.trainingAr) || text(header.trainingFr),
-    niveau: text(person.levelName) || text(header.levelName),
-    groupe: text(person.groupName) || '',
-    lieuEdition: 'Mostaganem',
-    dateEdition: formatDate(now),
-    dateEditionInverse: formatDate(now, true),
-    directeur: 'Le Directeur',
+    values: {
+      anneeUniversitaire: text(header.academicYear),
+      institution: 'Université Abdelhamid Ibn Badis — Mostaganem',
+      civiliteArabe: arabicCivility(person.gender),
+      nomCompletArabe: text(person.arabicFullName) || text(person.fullName),
+      dateNaissance: text(person.birth),
+      dateNaissanceInverse: person.birthDate ? formatDate(person.birthDate, true) : '',
+      lieuNaissanceArabe: text(person.arabicBirthPlace) || text(person.birthPlace),
+      matricule: text(person.registrationNumber),
+      langue: text(header.trainingFr),
+      langueArabe: text(header.trainingAr) || text(header.trainingFr),
+      niveau: text(person.levelName) || text(header.levelName),
+      groupe: text(person.groupName) || '',
+      lieuEdition: 'Mostaganem',
+      dateEdition: formatDate(now),
+      dateEditionInverse: formatDate(now, true),
+      directeur: 'Le Directeur',
+    },
     qrCode,
   };
 }
@@ -284,10 +291,16 @@ export async function buildAttestationOdt(
   }
 
   const values = await Promise.all(people.map((person) => attestationValues(header, person, now)));
-  const rendered = fillTemplateMany(template.content, values);
+  const rendered = fillTemplateMany(template.content, values.map((v) => v.values));
+
+  const qrCodes = values
+    .map((result, index) => ({ enrollmentId: people[index]!.enrollmentId, data: result.qrCode }))
+    .filter((qr): qr is { enrollmentId: string; data: Uint8Array } => qr.data !== null);
+
+  const finalFile = injectQrCodes(rendered.file, qrCodes);
 
   return {
-    file: rendered.file,
+    file: finalFile,
     fileName: template.fileName,
     count: people.length,
     unresolved: rendered.unresolved,
