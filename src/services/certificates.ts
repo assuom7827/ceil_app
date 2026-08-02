@@ -45,7 +45,7 @@ function formatDate(value: Nullable<Date>, inverse = false): string {
 async function generateQrCode(verificationUrl: string): Promise<Uint8Array | null> {
   try {
     return await QRCode.toBuffer(verificationUrl, {
-      width: 200,
+      width: 300,
       margin: 1,
       errorCorrectionLevel: 'M',
     });
