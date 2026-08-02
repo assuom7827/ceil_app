@@ -229,6 +229,7 @@ export function fillTemplateMany(
 /** Nom du style de saut de page ajouté au gabarit. */
 const PAGE_BREAK_STYLE = 'CeilSautDePage';
 const BODY = /(<office:text\b[^>]*>)([\s\S]*)(<\/office:text>)/;
+const PAGE_BREAK_MARKER = `<text:p text:style-name="${PAGE_BREAK_STYLE}"><text:line-break/></text:p>`;
 /**
  * Déclarations à ne pas dupliquer : compteurs de séquence, variables et
  * formulaires sont définis une fois pour le document entier.
@@ -255,11 +256,10 @@ export function repeatBody(contentXml: string, copies: number): string {
 
   const [, open, inner, close] = match as unknown as [string, string, string, string];
   const declarations = DECLARATIONS.exec(inner)?.[0] ?? '';
-  const body = inner.slice(declarations.length).replace(new RegExp(`<text:p text:style-name="${PAGE_BREAK_STYLE}"/>`, 'g'), '');
+  const body = inner.slice(declarations.length).replace(new RegExp(`<text:p text:style-name="${PAGE_BREAK_STYLE}"[^>]*>`, 'g'), '').trim();
 
-  const breakParagraph = `<text:p text:style-name="${PAGE_BREAK_STYLE}"><text:line-break/></text:p>`;
   const repeated = Array.from({ length: copies }, (_, position) =>
-    position === 0 ? body : breakParagraph + body,
+    position === 0 ? body : PAGE_BREAK_MARKER + body,
   ).join('');
 
   return withPageBreakStyle(
@@ -314,11 +314,10 @@ function splitCopies(
   if (copies <= 1) return { prefix, body: [inner], suffix };
 
   const declarations = DECLARATIONS.exec(inner)?.[0] ?? '';
-  const marker = `<text:p text:style-name="${PAGE_BREAK_STYLE}"/>`;
-  const pieces = inner.slice(declarations.length).split(marker);
+  const pieces = inner.slice(declarations.length).split(PAGE_BREAK_MARKER);
   return {
     prefix: prefix + declarations,
-    body: pieces.map((piece, position) => (position === 0 ? piece : marker + piece)),
+    body: pieces.map((piece, position) => (position === 0 ? piece : PAGE_BREAK_MARKER + piece)),
     suffix,
   };
 }

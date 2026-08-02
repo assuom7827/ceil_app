@@ -18,15 +18,17 @@ export const GET = route<{ id: string }>(
 
     const built = await buildAttestationOdt(db, params.id, enrollmentId);
     const base = built.count === 1 ? 'attestation-inscription' : 'attestations-inscription';
-    const bytes = new Uint8Array(await odtToPdf(built.file));
+    const pdfBytes = await odtToPdf(built.file);
+    const fileName = `${base}.pdf`;
 
-    return new NextResponse(bytes, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(`${base}.pdf`)}`,
-        'Cache-Control': 'no-store',
-        'X-Ceil-Certificates': String(built.count),
-      },
+    const headers = new Headers({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      'Cache-Control': 'no-store',
+      'Content-Length': String(pdfBytes.byteLength),
+      'X-Ceil-Certificates': String(built.count),
     });
+
+    return new NextResponse(Buffer.from(pdfBytes), { headers });
   },
 );
