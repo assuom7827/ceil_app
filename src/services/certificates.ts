@@ -291,16 +291,16 @@ export async function buildAttestationOdt(
   }
 
   const values = await Promise.all(people.map((person) => attestationValues(header, person, now)));
-  const rendered = fillTemplateMany(template.content, values.map((v) => v.values));
 
   const qrCodes = values
     .map((result, index) => ({ enrollmentId: people[index]!.enrollmentId, data: result.qrCode }))
     .filter((qr): qr is { enrollmentId: string; data: Uint8Array } => qr.data !== null);
 
-  const finalFile = injectQrCodes(rendered.file, qrCodes);
+  const withQrCodes = injectQrCodes(template.content, qrCodes);
+  const rendered = fillTemplateMany(withQrCodes, values.map((v) => v.values));
 
   return {
-    file: finalFile,
+    file: rendered.file,
     fileName: template.fileName,
     count: people.length,
     unresolved: rendered.unresolved,
