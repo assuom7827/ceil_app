@@ -32,7 +32,7 @@ export default async function VerifyPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md rounded-lg border p-6">
+      <div className="w-full max-w-2xl rounded-lg border p-6">
         <h1 className="mb-4 text-center text-2xl font-bold">Vérification d&apos;attestation</h1>
 
         {error ? (
@@ -80,9 +80,9 @@ export default async function VerifyPage({
         ) : (
           <div className="flex justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(apiUrl)}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(apiUrl)}`}
               alt="QR Code de vérification"
-              className="rounded"
+              className="rounded w-[28rem] h-[28rem]"
             />
           </div>
         )}
