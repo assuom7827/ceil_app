@@ -59,6 +59,7 @@ export const ATTESTATION_PLACEHOLDERS: ReadonlyArray<PlaceholderDoc> = Object.fr
   { name: 'dateEdition', description: "Date d’édition, JJ/MM/AAAA" },
   { name: 'dateEditionInverse', description: "Date d’édition, AAAA/MM/JJ" },
   { name: 'directeur', description: 'Titre du signataire (ex. Le Directeur)' },
+  { name: 'qrCode', description: 'QR code de vérification (image base64)' },
 ]);
 
 export const KNOWN_PLACEHOLDER_NAMES: ReadonlySet<string> = new Set([

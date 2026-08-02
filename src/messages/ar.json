@@ -606,5 +606,8 @@
   "positioningMatricule": "الرقم التسلسلي",
   "positioningParticipant": "المشارك",
   "positioningResolvedLevel": "المستوى المحدد",
-  "positioningTotalColumn": "المجموع"
+  "positioningTotalColumn": "المجموع",
+  "qrCode": {
+    "verify": "التحقق من هذه الشهادة"
+  }
 }

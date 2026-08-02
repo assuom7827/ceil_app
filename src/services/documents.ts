@@ -29,6 +29,7 @@ export interface DocumentHeader {
     associationLogo: string | null;
     backgroundImage: string | null;
   } | null;
+  sessionId: string;
   sessionTitle: string;
   trainingFr: string;
   trainingAr: string | null;
@@ -73,6 +74,7 @@ async function loadHeader(db: Db, trainingSessionId: string): Promise<DocumentHe
   const session = await db.trainingSession.findUnique({
     where: { id: trainingSessionId },
     select: {
+      id: true,
       academicYear: true,
       dateFrom: true,
       dateTo: true,
@@ -126,6 +128,7 @@ async function loadHeader(db: Db, trainingSessionId: string): Promise<DocumentHe
 
   return {
     model,
+    sessionId: session.id,
     sessionTitle: deriveSessionTitle(session),
     trainingFr: session.training.frName,
     trainingAr: session.training.arName,

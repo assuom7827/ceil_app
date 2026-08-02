@@ -606,5 +606,8 @@
   "positioningMatricule": "Matricule",
   "positioningParticipant": "Participant",
   "positioningResolvedLevel": "Niveau résolu",
-  "positioningTotalColumn": "Total"
+  "positioningTotalColumn": "Total",
+  "qrCode": {
+    "verify": "Vérifier cette attestation"
+  }
 }

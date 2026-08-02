@@ -20,6 +20,7 @@ import {
   type PlaceholderDoc,
 } from './certificate-placeholders';
 import { fillTemplateMany, listTemplatePlaceholders } from './odt';
+import QRCode from 'qrcode';
 
 /**
  * Le catalogue est réexporté pour que l'API n'ait qu'un point d'entrée, mais il
@@ -39,6 +40,18 @@ function formatDate(value: Nullable<Date>, inverse = false): string {
   const month = String(value.getUTCMonth() + 1).padStart(2, '0');
   const year = value.getUTCFullYear();
   return inverse ? `${year}/${month}/${day}` : `${day}/${month}/${year}`;
+}
+
+async function generateQrCode(verificationUrl: string): Promise<string> {
+  try {
+    return await QRCode.toDataURL(verificationUrl, {
+      width: 200,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+    });
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -117,11 +130,15 @@ export interface CertificateReport {
   unresolved: string[];
 }
 
-export function attestationValues(
+export async function attestationValues(
   header: DocumentHeader,
   person: DocumentPerson,
   now: Date = new Date(),
-): Record<string, string> {
+): Promise<Record<string, string>> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const verificationUrl = `${baseUrl}/verify/${header.sessionId}/${person.enrollmentId}`;
+  const qrCode = await generateQrCode(verificationUrl);
+
   return {
     anneeUniversitaire: text(header.academicYear),
     institution: 'Université Abdelhamid Ibn Badis — Mostaganem',
@@ -139,6 +156,7 @@ export function attestationValues(
     dateEdition: formatDate(now),
     dateEditionInverse: formatDate(now, true),
     directeur: 'Le Directeur',
+    qrCode,
   };
 }
 
@@ -265,10 +283,8 @@ export async function buildAttestationOdt(
     throw validationError('Aucune inscription dans cette session : rien à éditer.', { trainingSessionId });
   }
 
-  const rendered = fillTemplateMany(
-    template.content,
-    people.map((person) => attestationValues(header, person, now)),
-  );
+  const values = await Promise.all(people.map((person) => attestationValues(header, person, now)));
+  const rendered = fillTemplateMany(template.content, values);
 
   return {
     file: rendered.file,
