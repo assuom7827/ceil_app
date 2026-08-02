@@ -51,12 +51,14 @@ export interface DocumentPerson {
   fullName: string;
   arabicFullName: string;
   birth: string | null;
+  birthDate: Date | null;
   birthPlace: string | null;
   arabicBirthPlace: string | null;
   levelName: string | null;
   levelId: string | null;
   groupName: string | null;
   teacherName: string | null;
+  gender: 'WOMAN' | 'MAN' | null;
   scores: {
     oralExpression: number | null;
     writtenExpression: number | null;
@@ -153,13 +155,21 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
           approximateBirth: true,
           birthPlace: true,
           arabBirthPlace: true,
+          gender: true,
         },
       },
     },
   });
   const birthByEnrollment = new Map(births.map((row) => [row.id, row.participant]));
 
-  return deliberation.rows.map((row) => {
+  const seen = new Set<string>();
+  const uniqueRows = deliberation.rows.filter((row) => {
+    if (seen.has(row.enrollmentId)) return false;
+    seen.add(row.enrollmentId);
+    return true;
+  });
+
+  return uniqueRows.map((row) => {
     const participant = birthByEnrollment.get(row.enrollmentId);
 
     return {
@@ -169,12 +179,14 @@ async function loadPeople(db: Db, trainingSessionId: string): Promise<DocumentPe
       fullName: deriveParticipantFullName(row.participant),
       arabicFullName: deriveParticipantArabicFullName(row.participant),
       birth: participant ? deriveBirthDisplay(participant) : null,
+      birthDate: participant?.birthDate ?? null,
       birthPlace: participant?.birthPlace ?? null,
       arabicBirthPlace: participant?.arabBirthPlace ?? null,
       levelName: row.assignedLevel?.name ?? null,
       levelId: row.assignedLevel?.id ?? null,
       groupName: row.sessionGroup?.name ?? null,
       teacherName: row.sessionGroup?.teacher?.name ?? null,
+      gender: participant?.gender ?? null,
       scores: {
         oralExpression: row.oralExpression,
         writtenExpression: row.writtenExpression,

@@ -8,35 +8,38 @@ import type { DocumentHeader, DocumentPerson, GroupListDocument } from '@/servic
  * administrateur authentifié, pas une saisie d'utilisateur final.
  */
 function OfficialHeader({ header }: { header: DocumentHeader }) {
+  let headingHtml = header.model?.heading ?? null;
+
+  if (headingHtml && header.model) {
+    const universityLogo = header.model.universityLogo ?? '';
+    const associationLogo = header.model.associationLogo ?? '';
+
+    if (universityLogo) {
+      headingHtml = headingHtml.replace(/\{\{universityLogo\}\}/g, universityLogo);
+    }
+    if (associationLogo) {
+      headingHtml = headingHtml.replace(/\{\{associationLogo\}\}/g, associationLogo);
+    }
+  }
+
+  if (headingHtml) {
+    return (
+      <header className="mb-8 space-y-3">
+        <div
+          className="text-sm leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: headingHtml }}
+        />
+        <hr className="border-black/40" />
+      </header>
+    );
+  }
+
   return (
     <header className="mb-8 space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        {header.model?.universityLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={header.model.universityLogo} alt="" className="h-20 w-auto object-contain" />
-        ) : (
-          <span className="w-20" />
-        )}
-
-        {header.model?.heading ? (
-          <div
-            className="flex-1 text-center text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: header.model.heading }}
-          />
-        ) : (
-          <div className="flex-1 space-y-1 text-center text-sm">
-            <p className="rtl-block text-center">الجمهورية الجزائرية الديمقراطية الشعبية</p>
-            <p>Université Abdelhamid Ibn Badis — Mostaganem</p>
-            <p>Centre d’Enseignement Intensif des Langues</p>
-          </div>
-        )}
-
-        {header.model?.associationLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={header.model.associationLogo} alt="" className="h-20 w-auto object-contain" />
-        ) : (
-          <span className="w-20" />
-        )}
+      <div className="text-center text-sm">
+        <p className="rtl-block text-center">الجمهورية الجزائرية الديمقراطية الشعبية</p>
+        <p>Université Abdelhamid Ibn Badis — Mostaganem</p>
+        <p>Centre d&apos;Enseignement Intensif des Langues</p>
       </div>
       <hr className="border-black/40" />
     </header>
@@ -251,7 +254,7 @@ export function MinutesSheets({
             <p className="text-lg font-bold uppercase">Procès-verbal de délibération</p>
             <SessionLine header={header} levelName={filteredLevel} />
             <p className="text-xs text-black/60">
-              Seuil d2019admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
+              Seuil d&apos;admission : {header.admissionThreshold} — page {pageIndex + 1} sur{' '}
               {pages.length}
             </p>
           </div>

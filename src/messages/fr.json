@@ -316,7 +316,6 @@
     "tabTeachers": "Enseignants",
     "tabCategories": "Catégories",
     "tabLevels": "Niveaux CECRL",
-    "tabDiplomas": "Modèles de diplôme",
     "colName": "Nom",
     "colArName": "Nom arabe",
     "colDescription": "Description",
@@ -358,7 +357,10 @@
     "fieldBackgroundImage": "Image de fond (URL)",
     "fieldHeading": "En-tête (HTML bilingue)",
     "fieldDisabledDefaultHelp": "Un modèle désactivé ne peut pas rester le modèle par défaut.",
-    "levelNamePlaceholder": "B1.1"
+    "levelNamePlaceholder": "B1.1",
+    "tabDocuments": "Documents officiels",
+    "colCertificateTemplate": "Gabarit Diplôme (ODT)",
+    "colAttestationTemplate": "Gabarit Attestation d’inscription (ODT)"
   },
   "workspace": {
     "tabEnrollments": "Inscrits",
@@ -399,7 +401,9 @@
     "empty": "Aucun inscrit. Utilisez « Inscrire des participants ».",
     "updated": "{count} inscription(s) mise(s) à jour.",
     "removed": "{count} inscription(s) retirée(s).",
-    "assigned": "{count} inscription(s) affectée(s)."
+    "assigned": "{count} inscription(s) affectée(s).",
+    "certificate": "Attestation",
+    "printAttestation": "Attestation d’inscription"
   },
   "positioningTab": {
     "noTest": "Aucun test de positionnement pour la formation de cette session. Créez-en un depuis l'écran « Tests de positionnement ».",
@@ -548,7 +552,20 @@
   },
   "userMenu": {
     "language": "Langue",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMinLength": "10 caractères minimum",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordChanged": "Mot de passe modifié avec succès",
+    "passwordChangeError": "Erreur lors du changement de mot de passe",
+    "changePasswordDescription": "Mettre à jour votre mot de passe",
+    "cancel": "Annuler",
+    "passwordRequired": "Tous les champs sont requis",
+    "userNotFound": "Utilisateur introuvable",
+    "currentPasswordIncorrect": "Mot de passe actuel incorrect"
   },
   "printToolbar": {
     "close": "Fermer",

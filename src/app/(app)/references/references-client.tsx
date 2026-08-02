@@ -19,6 +19,12 @@ function certificateTemplate(row: ResourceRecord): TemplateRow | null {
   return (templates as TemplateRow[]).find((template) => template.kind === 'CERTIFICATE') ?? null;
 }
 
+function attestationTemplate(row: ResourceRecord): TemplateRow | null {
+  const templates = row['templates'];
+  if (!Array.isArray(templates)) return null;
+  return (templates as TemplateRow[]).find((template) => template.kind === 'ATTESTATION') ?? null;
+}
+
 export interface ReferencePermissions {
   faculty: boolean;
   speciality: boolean;
@@ -40,7 +46,7 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
         <TabsTrigger value="teachers">{t('references.tabTeachers')}</TabsTrigger>
         <TabsTrigger value="categories">{t('references.tabCategories')}</TabsTrigger>
         <TabsTrigger value="levels">{t('references.tabLevels')}</TabsTrigger>
-        <TabsTrigger value="diplomas">{t('references.tabDiplomas')}</TabsTrigger>
+          <TabsTrigger value="documents">{t('references.tabDocuments')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="faculties">
@@ -176,7 +182,7 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
         />
       </TabsContent>
 
-      <TabsContent value="diplomas">
+      <TabsContent value="documents">
         <ResourceManager
           endpoint="/api/diploma-models"
           title={t('references.diplomas')}
@@ -187,13 +193,30 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
             { key: 'isDefault', header: t('references.colDefault') },
             { key: 'disabled', header: t('references.colDisabled') },
             {
-              key: 'templates',
-              header: t('references.colTemplate'),
+              key: 'certificateTemplate',
+              header: t('references.colCertificateTemplate'),
               render: (row) => {
                 const template = certificateTemplate(row);
                 return (
                   <TemplateControl
                     modelId={String(row['id'])}
+                    kind="CERTIFICATE"
+                    fileName={template?.fileName ?? null}
+                    updatedAt={template?.updatedAt ?? null}
+                    canWrite={permissions.diplomaModel}
+                  />
+                );
+              },
+            },
+            {
+              key: 'attestationTemplate',
+              header: t('references.colAttestationTemplate'),
+              render: (row) => {
+                const template = attestationTemplate(row);
+                return (
+                  <TemplateControl
+                    modelId={String(row['id'])}
+                    kind="ATTESTATION"
                     fileName={template?.fileName ?? null}
                     updatedAt={template?.updatedAt ?? null}
                     canWrite={permissions.diplomaModel}
@@ -206,14 +229,16 @@ export function ReferencesClient({ permissions }: { permissions: ReferencePermis
             { kind: 'text', name: 'name', label: t('references.fieldName'), required: true },
             { kind: 'checkbox', name: 'isDefault', label: t('references.fieldIsDefault') },
             {
-              kind: 'text',
+              kind: 'logo',
               name: 'universityLogo',
               label: t('references.fieldUniversityLogo'),
+              type: 'university',
             },
             {
-              kind: 'text',
+              kind: 'logo',
               name: 'associationLogo',
               label: t('references.fieldAssociationLogo'),
+              type: 'association',
             },
             {
               kind: 'text',

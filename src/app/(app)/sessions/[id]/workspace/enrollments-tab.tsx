@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
@@ -145,8 +145,26 @@ export function EnrollmentsTab({
         get: (row) => drafts.get(row.id)?.examGroupId ?? '',
         options: groupOptions.exam,
       },
+      {
+        key: 'printCertificate',
+        header: '',
+        kind: 'computed',
+        get: () => '',
+        align: 'end',
+        render: (row) => {
+          const href = `/print/sessions/${sessionId}/attestations?enrollmentId=${row.id}`;
+          return (
+            <Button asChild variant="ghost" size="sm">
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                <ExternalLink />
+                {t('enrollmentsTab.printAttestation')}
+              </a>
+            </Button>
+          );
+        },
+      },
     ],
-    [drafts, groupOptions, levels, t],
+    [drafts, groupOptions, levels, t, sessionId],
   );
 
   async function saveAll() {

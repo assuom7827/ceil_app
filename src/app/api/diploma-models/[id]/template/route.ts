@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import { readUpload, route } from '@/lib/api/handler';
-import { CERTIFICATE_PLACEHOLDERS, unknownPlaceholders } from '@/services/certificates';
+import { ATTESTATION_PLACEHOLDERS, CERTIFICATE_PLACEHOLDERS, unknownPlaceholders } from '@/services/certificates';
 import { notFoundError, validationError } from '@/services/errors';
 import { listTemplatePlaceholders, readOdt } from '@/services/odt';
 
 const MAX_BYTES = 8 * 1024 * 1024;
+const ALLOWED_KINDS = new Set(['CERTIFICATE', 'ATTESTATION']);
+
+function templateKind(url: URL): 'CERTIFICATE' | 'ATTESTATION' {
+  const raw = url.searchParams.get('kind');
+  if (raw && ALLOWED_KINDS.has(raw)) return raw as 'CERTIFICATE' | 'ATTESTATION';
+  return 'CERTIFICATE';
+}
+
+function placeholdersFor(kind: 'CERTIFICATE' | 'ATTESTATION') {
+  return kind === 'ATTESTATION' ? ATTESTATION_PLACEHOLDERS : CERTIFICATE_PLACEHOLDERS;
+}
 
 /**
  * Téléverse le gabarit ODT d'attestation d'un modèle de diplôme.
@@ -16,7 +27,8 @@ const MAX_BYTES = 8 * 1024 * 1024;
  */
 export const POST = route<{ id: string }>(
   { resource: 'DiplomaModel', access: 'write' },
-  async ({ db, params, request }) => {
+  async ({ db, params, request, url }) => {
+    const kind = templateKind(url);
     const model = await db.diplomaModel.findUnique({
       where: { id: params.id },
       select: { id: true },
@@ -35,14 +47,14 @@ export const POST = route<{ id: string }>(
     const placeholders = listTemplatePlaceholders(bytes);
 
     const saved = await db.documentTemplate.upsert({
-      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind: 'CERTIFICATE' } },
+      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind } },
       create: {
         diplomaModelId: params.id,
-        kind: 'CERTIFICATE',
-        fileName: fileName || 'attestation.odt',
+        kind,
+        fileName: fileName || `gabarit-${kind.toLowerCase()}.odt`,
         content: Buffer.from(bytes),
       },
-      update: { fileName: fileName || 'attestation.odt', content: Buffer.from(bytes) },
+      update: { fileName: fileName || `gabarit-${kind.toLowerCase()}.odt`, content: Buffer.from(bytes) },
       select: { id: true, fileName: true, updatedAt: true },
     });
 
@@ -52,7 +64,7 @@ export const POST = route<{ id: string }>(
         byteSize: bytes.byteLength,
         placeholders,
         unknownPlaceholders: unknownPlaceholders(bytes),
-        knownPlaceholders: CERTIFICATE_PLACEHOLDERS,
+        knownPlaceholders: placeholdersFor(kind),
       },
       { status: 201 },
     );
@@ -67,13 +79,14 @@ export const POST = route<{ id: string }>(
  */
 export const GET = route<{ id: string }>(
   { resource: 'DiplomaModel', access: 'read' },
-  async ({ db, params }) => {
+  async ({ db, params, url }) => {
+    const kind = templateKind(url);
     const template = await db.documentTemplate.findUnique({
-      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind: 'CERTIFICATE' } },
+      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind } },
       select: { fileName: true, content: true },
     });
     if (!template) {
-      throw notFoundError('Aucun gabarit d’attestation pour ce modèle.', { id: params.id });
+      throw notFoundError('Aucun gabarit pour ce modèle.', { id: params.id });
     }
 
     return new NextResponse(new Uint8Array(template.content), {
@@ -89,13 +102,14 @@ export const GET = route<{ id: string }>(
 /** Retire le gabarit : les documents HTML reprennent la main. */
 export const DELETE = route<{ id: string }>(
   { resource: 'DiplomaModel', access: 'write' },
-  async ({ db, params }) => {
+  async ({ db, params, url }) => {
+    const kind = templateKind(url);
     const template = await db.documentTemplate.findUnique({
-      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind: 'CERTIFICATE' } },
+      where: { diplomaModelId_kind: { diplomaModelId: params.id, kind } },
       select: { id: true },
     });
     if (!template) {
-      throw notFoundError('Aucun gabarit d’attestation pour ce modèle.', { id: params.id });
+      throw notFoundError('Aucun gabarit pour ce modèle.', { id: params.id });
     }
     await db.documentTemplate.delete({ where: { id: template.id } });
     return undefined; // 204

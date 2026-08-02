@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiGet, ApiError } from '@/lib/api/client';
 import { readPath, type FieldDef, type ResourceRecord } from './fields';
+import { LogoUpload } from '@/components/documents/logo-upload';
 
 type FormValue = string | boolean | string[];
 
@@ -226,17 +227,25 @@ export function ResourceForm({
                           })
                         )}
                       </div>
-                    ) : (
-                      <Input
-                        id={id}
-                        type={field.kind === 'date' ? 'date' : 'text'}
-                        inputMode={field.kind === 'number' ? 'decimal' : undefined}
-                        placeholder={'placeholder' in field ? field.placeholder : undefined}
-                        value={String(value ?? '')}
-                        onChange={(event) => update(field.name, event.target.value)}
-                        aria-invalid={Boolean(message)}
-                      />
-                    )}
+                     ) : field.kind === 'logo' ? (
+                       <LogoUpload
+                         modelId={String(record?.id ?? '')}
+                         type={field.type}
+                         currentUrl={String(value ?? '') || null}
+                         onUploaded={(url) => update(field.name, url)}
+                         onRemoved={() => update(field.name, '')}
+                       />
+                     ) : (
+                       <Input
+                         id={id}
+                         type={field.kind === 'date' ? 'date' : 'text'}
+                         inputMode={field.kind === 'number' ? 'decimal' : undefined}
+                         placeholder={'placeholder' in field ? field.placeholder : undefined}
+                         value={String(value ?? '')}
+                         onChange={(event) => update(field.name, event.target.value)}
+                         aria-invalid={Boolean(message)}
+                       />
+                     )}
                   </>
                 )}
 

@@ -1,8 +1,10 @@
 import { PrintToolbar } from '@/components/documents/print-toolbar';
-import { AttestationSheet } from '@/components/documents/sheets';
+import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/prisma';
+import { findCertificateTemplate } from '@/services/certificates';
 import { getAttestationDocument } from '@/services/documents';
 import { getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -20,6 +22,29 @@ export default async function AttestationsPage({
   const [{ id }, { enrollmentId }] = await Promise.all([params, searchParams]);
   const { header, people } = await getAttestationDocument(prisma, id, enrollmentId);
 
+  const template = await findCertificateTemplate(prisma, id, 'ATTESTATION');
+
+  if (!template) {
+    return (
+      <>
+        <PrintToolbar
+          title={t('documentsTab.attestationsTitle')}
+          subtitle={header.sessionTitle}
+        />
+        <p className="print-sheet flex items-center justify-center text-center text-sm">
+          Aucun gabarit d&apos;attestation d&apos;inscription n&apos;est configuré pour cette session.
+          Ajoutez-en un depuis Référentiels → Documents.
+        </p>
+      </>
+    );
+  }
+
+  if (enrollmentId) {
+    redirect(`/api/sessions/${id}/attestation?enrollmentId=${enrollmentId}`);
+  }
+
+  const allPdfHref = `/api/sessions/${id}/attestation`;
+
   return (
     <>
       <PrintToolbar
@@ -31,9 +56,13 @@ export default async function AttestationsPage({
           {t('documentsTab.attestationsBlocked')}
         </p>
       ) : (
-        people.map((person) => (
-          <AttestationSheet key={person.enrollmentId} header={header} person={person} />
-        ))
+        <div className="print-sheet flex justify-center">
+          <Button asChild variant="default">
+            <a href={allPdfHref} target="_blank" rel="noopener noreferrer">
+              Télécharger toutes les attestations (PDF)
+            </a>
+          </Button>
+        </div>
       )}
     </>
   );

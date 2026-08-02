@@ -11,9 +11,10 @@
  */
 import type { Db } from './db';
 import { arabicMonthOfDate, type Nullable } from './derive';
-import { getDiplomaDocument, type DocumentHeader, type DocumentPerson } from './documents';
+import { getAttestationDocument, getDiplomaDocument, type DocumentHeader, type DocumentPerson } from './documents';
 import { notFoundError, validationError } from './errors';
 import {
+  ATTESTATION_PLACEHOLDERS,
   CERTIFICATE_PLACEHOLDERS,
   KNOWN_PLACEHOLDER_NAMES,
   type PlaceholderDoc,
@@ -25,7 +26,7 @@ import { fillTemplateMany, listTemplatePlaceholders } from './odt';
  * VIT dans un module pur : l'écran des modèles l'importe aussi, et il ne doit
  * pas entraîner de code serveur dans le bundle du navigateur.
  */
-export { CERTIFICATE_PLACEHOLDERS, type PlaceholderDoc };
+export { ATTESTATION_PLACEHOLDERS, CERTIFICATE_PLACEHOLDERS, type PlaceholderDoc };
 
 /** Sépare un nom composé « NOM Prénom » n'est PAS fait ici : les champs existent. */
 function text(value: Nullable<string>): string {
@@ -116,6 +117,31 @@ export interface CertificateReport {
   unresolved: string[];
 }
 
+export function attestationValues(
+  header: DocumentHeader,
+  person: DocumentPerson,
+  now: Date = new Date(),
+): Record<string, string> {
+  return {
+    anneeUniversitaire: text(header.academicYear),
+    institution: 'Université Abdelhamid Ibn Badis — Mostaganem',
+    civiliteArabe: arabicCivility(person.gender),
+    nomCompletArabe: text(person.arabicFullName) || text(person.fullName),
+    dateNaissance: text(person.birth),
+    dateNaissanceInverse: person.birthDate ? formatDate(person.birthDate, true) : '',
+    lieuNaissanceArabe: text(person.arabicBirthPlace) || text(person.birthPlace),
+    matricule: text(person.registrationNumber),
+    langue: text(header.trainingFr),
+    langueArabe: text(header.trainingAr) || text(header.trainingFr),
+    niveau: text(person.levelName) || text(header.levelName),
+    groupe: text(person.groupName) || '',
+    lieuEdition: 'Mostaganem',
+    dateEdition: formatDate(now),
+    dateEditionInverse: formatDate(now, true),
+    directeur: 'Le Directeur',
+  };
+}
+
 /**
  * Repères d'un gabarit que l'application ne sait pas remplir.
  *
@@ -130,6 +156,7 @@ export function unknownPlaceholders(file: Uint8Array): string[] {
 export async function findCertificateTemplate(
   db: Db,
   trainingSessionId: string,
+  kind: 'CERTIFICATE' | 'ATTESTATION' = 'CERTIFICATE',
 ): Promise<{ id: string; fileName: string; content: Uint8Array } | null> {
   const session = await db.trainingSession.findUnique({
     where: { id: trainingSessionId },
@@ -139,13 +166,11 @@ export async function findCertificateTemplate(
     throw notFoundError('Session de formation introuvable.', { trainingSessionId });
   }
 
-  // Même règle que pour les documents HTML : un modèle désactivé ne sert pas,
-  // le modèle par défaut prend le relais.
   const usable = session.diplomaModelId && !session.diplomaModel?.disabled;
   const template = usable
     ? await db.documentTemplate.findUnique({
         where: {
-          diplomaModelId_kind: { diplomaModelId: session.diplomaModelId!, kind: 'CERTIFICATE' },
+          diplomaModelId_kind: { diplomaModelId: session.diplomaModelId!, kind },
         },
         select: { id: true, fileName: true, content: true },
       })
@@ -156,7 +181,7 @@ export async function findCertificateTemplate(
     where: { isDefault: true, disabled: false },
     select: {
       templates: {
-        where: { kind: 'CERTIFICATE' },
+        where: { kind },
         select: { id: true, fileName: true, content: true },
       },
     },
@@ -211,6 +236,44 @@ export async function buildCertificateOdt(
     file: rendered.file,
     fileName: template.fileName,
     count: recipients.length,
+    unresolved: rendered.unresolved,
+  };
+}
+
+/**
+ * Produit l'ODT rempli des attestations d'inscription d'une session.
+ *
+ * Sans `enrollmentId`, toutes les inscriptions sont servies, une page par
+ * personne — quel que soit le statut de délibération.
+ */
+export async function buildAttestationOdt(
+  db: Db,
+  trainingSessionId: string,
+  enrollmentId?: string,
+  now: Date = new Date(),
+): Promise<CertificateReport> {
+  const template = await findCertificateTemplate(db, trainingSessionId, 'ATTESTATION');
+  if (!template) {
+    throw validationError(
+      'Aucun gabarit d’attestation d’inscription n’est téléversé pour cette session. Ajoutez-en un depuis Référentiels → Modèles de diplôme.',
+      { trainingSessionId },
+    );
+  }
+
+  const { header, people } = await getAttestationDocument(db, trainingSessionId, enrollmentId);
+  if (people.length === 0) {
+    throw validationError('Aucune inscription dans cette session : rien à éditer.', { trainingSessionId });
+  }
+
+  const rendered = fillTemplateMany(
+    template.content,
+    people.map((person) => attestationValues(header, person, now)),
+  );
+
+  return {
+    file: rendered.file,
+    fileName: template.fileName,
+    count: people.length,
     unresolved: rendered.unresolved,
   };
 }

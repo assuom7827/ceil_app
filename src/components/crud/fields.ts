@@ -42,6 +42,12 @@ export type FieldDef =
       endpoint: string;
       optionLabel: (item: Record<string, unknown>) => string;
       help?: string;
+    }
+  | {
+      kind: 'logo';
+      name: string;
+      label: string;
+      type: 'university' | 'association';
     };
 
 export interface ColumnDef {
