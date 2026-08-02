@@ -232,6 +232,16 @@ export async function buildCertificateOdt(
   enrollmentId?: string,
   now: Date = new Date(),
 ): Promise<CertificateReport> {
+  if (enrollmentId) {
+    const enrollment = await db.enrollment.findFirst({
+      where: { id: enrollmentId, trainingSessionId },
+      select: { id: true },
+    });
+    if (!enrollment) {
+      throw notFoundError('Inscription introuvable dans cette session.', { enrollmentId });
+    }
+  }
+
   const template = await findCertificateTemplate(db, trainingSessionId);
   if (!template) {
     throw validationError(
@@ -277,6 +287,16 @@ export async function buildAttestationOdt(
   enrollmentId?: string,
   now: Date = new Date(),
 ): Promise<CertificateReport> {
+  if (enrollmentId) {
+    const enrollment = await db.enrollment.findFirst({
+      where: { id: enrollmentId, trainingSessionId },
+      select: { id: true },
+    });
+    if (!enrollment) {
+      throw notFoundError('Inscription introuvable dans cette session.', { enrollmentId });
+    }
+  }
+
   const template = await findCertificateTemplate(db, trainingSessionId, 'ATTESTATION');
   if (!template) {
     throw validationError(
