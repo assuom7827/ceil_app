@@ -30,10 +30,16 @@ export type Resource =
 /** Rôles disposant du CRUD complet sur toutes les ressources. */
 const FULL_ACCESS_ROLES: readonly Role[] = ['MANAGER', 'ADMIN'];
 
-/** Ressources en LECTURE SEULE pour le rôle `USER`. */
-export const USER_READ_ONLY_RESOURCES: readonly Resource[] = [
-  'Training',
-  'TrainingLevel',
+/** Ressources que le rôle `USER` peut écrire.
+ *
+ *  Toute ressource hors de cette liste est en lecture seule pour lui.
+ *  Cette liste blanche remplace l'ancienne liste noire `USER_READ_ONLY_RESOURCES`,
+ *  qui autorisait implicitement l'écriture sur 13 ressources métier.
+ */
+const USER_WRITABLE_RESOURCES: readonly Resource[] = [
+  'Enrollment',
+  'PositioningScore',
+  'DeliberationEntry',
   'PaymentReceipt',
 ];
 
@@ -66,7 +72,7 @@ export function canWrite(actor: Actor | null | undefined, resource: Resource): b
   if (!actor) return false;
   if (ADMIN_ONLY_RESOURCES.includes(resource)) return actor.role === 'ADMIN';
   if (hasFullAccess(actor.role)) return true;
-  return !USER_READ_ONLY_RESOURCES.includes(resource);
+  return USER_WRITABLE_RESOURCES.includes(resource);
 }
 
 export function assertAuthenticated(actor: Actor | null | undefined): asserts actor is Actor {

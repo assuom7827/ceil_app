@@ -5,7 +5,6 @@ import {
   canRead,
   canWrite,
   hasFullAccess,
-  USER_READ_ONLY_RESOURCES,
   type Actor,
   type Resource,
 } from '@/services/rbac';
@@ -30,31 +29,48 @@ const BUSINESS_RESOURCES: Resource[] = [
   'DiplomaModel',
 ];
 
+const USER_WRITABLE_RESOURCES: Resource[] = [
+  'Enrollment',
+  'PositioningScore',
+  'DeliberationEntry',
+  'PaymentReceipt',
+];
+
 describe('RBAC', () => {
   it('accorde le CRUD complet à MANAGER et ADMIN', () => {
     expect(hasFullAccess('MANAGER')).toBe(true);
     expect(hasFullAccess('ADMIN')).toBe(true);
     expect(hasFullAccess('USER')).toBe(false);
 
-    for (const resource of [...BUSINESS_RESOURCES, ...USER_READ_ONLY_RESOURCES]) {
+    for (const resource of [...BUSINESS_RESOURCES, 'Training', 'TrainingLevel', 'PaymentReceipt', 'AuditLog'] as Resource[]) {
       expect(canWrite(manager, resource), resource).toBe(true);
       expect(canWrite(admin, resource), resource).toBe(true);
     }
   });
 
-  it('met USER en lecture seule sur Training, TrainingLevel et PaymentReceipt', () => {
-    expect(USER_READ_ONLY_RESOURCES).toEqual(['Training', 'TrainingLevel', 'PaymentReceipt']);
-
-    for (const resource of USER_READ_ONLY_RESOURCES) {
-      expect(canRead(user, resource), resource).toBe(true);
-      expect(canWrite(user, resource), resource).toBe(false);
-    }
+  it('réserve l\'écriture d\'AuditLog et de User à ADMIN / MANAGER', () => {
+    expect(canWrite(user, 'AuditLog')).toBe(false);
+    expect(canWrite(user, 'User')).toBe(false);
+    expect(canWrite(manager, 'AuditLog')).toBe(true);
+    expect(canWrite(manager, 'User')).toBe(false);
+    expect(canRead(manager, 'AuditLog')).toBe(true);
+    expect(canRead(user, 'AuditLog')).toBe(false);
   });
 
-  it('laisse USER gérer le métier courant', () => {
-    for (const resource of BUSINESS_RESOURCES) {
+  it('autorise USER à écrire uniquement les ressources métier courantes', () => {
+    for (const resource of USER_WRITABLE_RESOURCES) {
       expect(canWrite(user, resource), resource).toBe(true);
     }
+
+    for (const resource of BUSINESS_RESOURCES) {
+      if (!USER_WRITABLE_RESOURCES.includes(resource)) {
+        expect(canWrite(user, resource), resource).toBe(false);
+      }
+    }
+
+    expect(canWrite(user, 'Training')).toBe(false);
+    expect(canWrite(user, 'TrainingLevel')).toBe(false);
+    expect(canWrite(user, 'PaymentReceipt')).toBe(true);
   });
 
   it('réserve la gestion des comptes à ADMIN', () => {
