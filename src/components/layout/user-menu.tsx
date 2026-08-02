@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
 import { localeLabels, locales, type Locale } from '@/i18n/config';
 import { ChangePasswordDialog } from '@/components/layout/change-password-dialog';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 
 export interface UserMenuProps {
   user: { name: string; email: string; role: string };
@@ -69,6 +70,10 @@ export function UserMenu({ user, locale, logoutAction, setLocaleAction }: UserMe
               </DropdownMenuItem>
             </form>
           ))}
+
+          <DropdownMenuSeparator />
+
+          <ThemeToggle />
 
           <DropdownMenuSeparator />
 

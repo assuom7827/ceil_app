@@ -565,7 +565,10 @@
     "cancel": "Annuler",
     "passwordRequired": "Tous les champs sont requis",
     "userNotFound": "Utilisateur introuvable",
-    "currentPasswordIncorrect": "Mot de passe actuel incorrect"
+    "currentPasswordIncorrect": "Mot de passe actuel incorrect",
+    "theme": "Apparence",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair"
   },
   "printToolbar": {
     "close": "Fermer",
