@@ -98,8 +98,28 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  delegatedSessions SessionAgent[]
+  assignedSessions  SessionAgent[] @relation("SessionAssigner")
+
   @@index([role])
   @@map("users")
+}
+
+model SessionAgent {
+  id               String    @id @default(cuid())
+  trainingSessionId String
+  userId           String
+  assignedBy       String?
+  assignedAt       DateTime  @default(now())
+
+  trainingSession TrainingSession  @relation(fields: [trainingSessionId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assigner        User?            @relation("SessionAssigner", fields: [assignedBy], references: [id], onDelete: SetNull)
+
+  @@unique([trainingSessionId, userId])
+  @@index([userId])
+  @@index([trainingSessionId])
+  @@map("session_agents")
 }
 
 // ============================================================================
@@ -347,6 +367,7 @@ model TrainingSession {
   /// Groupes réels de la session (les gabarits n'ont pas de session).
   groups      StudentGroup[]
   receipts    PaymentReceipt[]
+  agents      SessionAgent[]
 
   @@index([trainingId])
   @@index([trainingLevelId])

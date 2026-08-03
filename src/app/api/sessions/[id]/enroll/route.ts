@@ -38,6 +38,7 @@ export const POST = route<{ id: string }>(
         kind: input.kind,
         responsible: input.responsible,
         actorId: actor.id,
+        actorRole: actor.role,
       });
 
       return { ...result, participantsCreated: createdIds.length };

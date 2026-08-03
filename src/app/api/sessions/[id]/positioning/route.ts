@@ -1,16 +1,12 @@
 import { route } from '@/lib/api/handler';
 import { getSessionPositioning } from '@/services/positioning';
 import { notFoundError } from '@/services/errors';
+import { assertSessionAccess } from '@/services/locking';
 
-/**
- * Grille de positionnement de la session.
- *
- * Sans `testId`, renvoie les tests disponibles pour la formation de la session,
- * afin que l'onglet puisse en proposer le choix avant toute saisie.
- */
 export const GET = route<{ id: string }>(
   { resource: 'PositioningScore', access: 'read' },
-  async ({ db, params, url }) => {
+  async ({ db, params, url, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
     const testId = url.searchParams.get('testId');
 
     const session = await db.trainingSession.findUnique({

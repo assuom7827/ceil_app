@@ -151,8 +151,13 @@ export async function upsertDeliberationEntry(
   enrollmentId: string,
   values: DeliberationScoreInput,
   actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ) {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const enrollment = await db.enrollment.findFirst({
     where: { id: enrollmentId, trainingSessionId },

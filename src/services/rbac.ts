@@ -5,6 +5,7 @@
  * une requête forgée doit être refusée même si le bouton n'existe pas à l'écran.
  */
 import { forbiddenError, unauthorizedError } from './errors';
+import type { Db } from './db';
 
 export type Role = 'MANAGER' | 'USER' | 'ADMIN';
 
@@ -30,10 +31,16 @@ export type Resource =
 /** Rôles disposant du CRUD complet sur toutes les ressources. */
 const FULL_ACCESS_ROLES: readonly Role[] = ['MANAGER', 'ADMIN'];
 
-/** Ressources en LECTURE SEULE pour le rôle `USER`. */
-export const USER_READ_ONLY_RESOURCES: readonly Resource[] = [
-  'Training',
-  'TrainingLevel',
+/** Ressources que le rôle `USER` peut écrire.
+ *
+ *  Toute ressource hors de cette liste est en lecture seule pour lui.
+ *  Cette liste blanche remplace l'ancienne liste noire `USER_READ_ONLY_RESOURCES`,
+ *  qui autorisait implicitement l'écriture sur 13 ressources métier.
+ */
+const USER_WRITABLE_RESOURCES: readonly Resource[] = [
+  'Enrollment',
+  'PositioningScore',
+  'DeliberationEntry',
   'PaymentReceipt',
 ];
 
@@ -66,7 +73,7 @@ export function canWrite(actor: Actor | null | undefined, resource: Resource): b
   if (!actor) return false;
   if (ADMIN_ONLY_RESOURCES.includes(resource)) return actor.role === 'ADMIN';
   if (hasFullAccess(actor.role)) return true;
-  return !USER_READ_ONLY_RESOURCES.includes(resource);
+  return USER_WRITABLE_RESOURCES.includes(resource);
 }
 
 export function assertAuthenticated(actor: Actor | null | undefined): asserts actor is Actor {
@@ -89,6 +96,57 @@ export function assertCanWrite(actor: Actor | null | undefined, resource: Resour
     throw forbiddenError(`Modification non autorisée sur ${resource} pour le rôle ${actor.role}.`, {
       resource,
       role: actor.role,
+    });
+  }
+}
+
+export async function canReadSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<boolean> {
+  if (!actor) return false;
+  if (hasFullAccess(actor.role)) return true;
+
+  const delegation = await db.sessionAgent.findFirst({
+    where: { trainingSessionId, userId: actor.id },
+    select: { id: true },
+  });
+  return !!delegation;
+}
+
+export async function canWriteSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<boolean> {
+  if (!actor) return false;
+  if (hasFullAccess(actor.role)) return true;
+  return canReadSession(actor, db, trainingSessionId);
+}
+
+export async function assertCanReadSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<void> {
+  if (!canReadSession(actor, db, trainingSessionId)) {
+    throw forbiddenError("Vous n'avez pas accès à cette session.", {
+      trainingSessionId,
+      role: actor?.role,
+    });
+  }
+}
+
+export async function assertCanWriteSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<void> {
+  if (!(await canWriteSession(actor, db, trainingSessionId))) {
+    throw forbiddenError("Vous n'avez pas les droits d'écriture sur cette session.", {
+      trainingSessionId,
+      role: actor?.role,
     });
   }
 }

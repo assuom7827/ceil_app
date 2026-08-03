@@ -33,6 +33,8 @@ const TABLES_IN_DELETION_ORDER = [
   'student_categories',
   'specialities',
   'faculties',
+  'session_agents',
+  'users',
 ] as const;
 
 export async function databaseAvailable(): Promise<boolean> {

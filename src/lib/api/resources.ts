@@ -177,6 +177,12 @@ export const trainingSessionCrud: CrudConfig<Record<string, unknown>> = {
     diplomaModel: true,
     _count: { select: { enrollments: true, groups: true } },
   },
+  listFilter: (actor) => {
+    if (actor.role === 'MANAGER' || actor.role === 'ADMIN') {
+      return {};
+    }
+    return { agents: { some: { userId: actor.id } } };
+  },
 };
 
 export const studentGroupCrud: CrudConfig<Record<string, unknown>> = {

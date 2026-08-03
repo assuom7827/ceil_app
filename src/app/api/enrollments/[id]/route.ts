@@ -33,7 +33,7 @@ export const PATCH = route<{ id: string }>(
 export const DELETE = route<{ id: string }>(
   { resource: 'Enrollment', access: 'write' },
   async ({ db, params, actor }) => {
-    await removeEnrollment(db, params.id, actor.id);
+    await removeEnrollment(db, params.id, actor.id, actor.role);
     return undefined; // 204
   },
 );

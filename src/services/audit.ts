@@ -23,3 +23,6 @@ export async function logAudit(db: Db, input: AuditLogInput): Promise<void> {
     },
   });
 }
+
+export const ACTION_SESSION_AGENT_ADDED = 'SESSION_AGENT_ADDED';
+export const ACTION_SESSION_AGENT_REMOVED = 'SESSION_AGENT_REMOVED';

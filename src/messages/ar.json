@@ -621,5 +621,21 @@
   "positioningTotalColumn": "المجموع",
   "qrCode": {
     "verify": "التحقق من هذه الشهادة"
+  },
+  "delegation": {
+    "title": "التفويض",
+    "subtitle": "قم بتعيين هذه الجلسة لموظفي إدخال البيانات.",
+    "delegateButton": "تفويض",
+    "undelegateButton": "إلغاء التفويض",
+    "delegateConfirm": "تفويض هذه الجلسة لـ {name}؟",
+    "undelegateConfirm": "إلغاء تفويض {name}؟",
+    "agents": "الموظفون المفوضون",
+    "noAgents": "لا يوجد موظفون مفوضون.",
+    "user": "المستخدم",
+    "email": "البريد الإلكتروني",
+    "assignedAt": "تم التعيين في",
+    "badge": "مفوض",
+    "manageTitle": "إدارة التفويض",
+    "manageDescription": "أضف أو أزل موظفين مخولين للعمل على هذه الجلسة."
   }
 }

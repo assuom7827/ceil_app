@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import {
   arabicCivility,
+  buildAttestationOdt,
   buildCertificateOdt,
   findCertificateTemplate,
   unknownPlaceholders,
@@ -234,6 +235,20 @@ describe.skipIf(!hasDb)('génération des attestations', () => {
     const built = await buildCertificateOdt(prisma, session.id);
     expect(built.count).toBe(2);
     expect(bodyOf(built.file).match(/CeilSautDePage"\/>/g)).toHaveLength(1);
+  });
+
+  it('refuse une attestation de réussite cross-session (404)', async () => {
+    const { session, enrollments } = await setup();
+    const { session: otherSession, enrollments: otherEnrollments } = await setup();
+
+    await expect(buildCertificateOdt(prisma, session.id, otherEnrollments[0]!.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
+    });
+    await expect(buildAttestationOdt(prisma, session.id, otherEnrollments[0]!.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
+    });
   });
 });
 

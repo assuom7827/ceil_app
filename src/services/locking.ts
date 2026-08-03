@@ -6,8 +6,9 @@
  * Toute tentative d'écriture lève une erreur 409.
  */
 import type { Db } from './db';
-import { lockedError, notFoundError } from './errors';
+import { lockedError, notFoundError, forbiddenError } from './errors';
 import { logAudit } from './audit';
+import type { Actor } from './rbac';
 
 export type WorkflowState = 'OPEN' | 'LOCKED';
 
@@ -31,8 +32,42 @@ export async function getSessionState(db: Db, trainingSessionId: string): Promis
   return session.state;
 }
 
-/** Refuse toute écriture sur une session verrouillée. */
-export async function assertSessionWritable(db: Db, trainingSessionId: string): Promise<void> {
+export async function assertSessionAccess(
+  db: Db,
+  trainingSessionId: string,
+  actor: Actor | null | undefined,
+): Promise<void> {
+  const session = await db.trainingSession.findUnique({
+    where: { id: trainingSessionId },
+    select: { id: true },
+  });
+  if (!session) {
+    throw notFoundError('Session de formation introuvable.', { trainingSessionId });
+  }
+
+  if (!actor) return;
+  if (actor.role === 'MANAGER' || actor.role === 'ADMIN') return;
+
+  const delegation = await db.sessionAgent.findFirst({
+    where: { trainingSessionId, userId: actor.id },
+    select: { id: true },
+  });
+
+  if (!delegation) {
+    throw forbiddenError("Vous n'êtes pas délégué sur cette session.", {
+      trainingSessionId,
+    });
+  }
+}
+
+/** Refuse toute écriture sur une session verrouillée ou inaccessible. */
+export async function assertSessionWritable(
+  db: Db,
+  trainingSessionId: string,
+  actor: Actor | null | undefined,
+): Promise<void> {
+  await assertSessionAccess(db, trainingSessionId, actor);
+
   if ((await getSessionState(db, trainingSessionId)) === 'LOCKED') {
     throw lockedError(
       'Cette session est verrouillée : inscriptions, notes et groupes ne peuvent plus être modifiés.',
