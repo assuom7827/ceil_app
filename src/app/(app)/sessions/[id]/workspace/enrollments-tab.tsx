@@ -8,6 +8,7 @@ import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { deriveParticipantFullName } from '@/services/derive';
 import { EnrollDialog } from './enroll-dialog';
+import { EnrollmentWizard } from './enrollment-wizard';
 import { FeedbackBanner, Spinner, useAction } from './feedback';
 import { ImportButton } from './import-button';
 import type { EnrollmentRow, EnrollmentsPayload, GroupRow } from './types';
@@ -28,14 +29,24 @@ function toDraft(row: EnrollmentRow): Draft {
   };
 }
 
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+function statusBadge(row: EnrollmentRow, t: (key: string) => string) {
+  return <span className="text-xs font-medium">{t(`enrollmentsTab.status${capitalize(row.status)}`)}</span>;
+}
+
 export function EnrollmentsTab({
   sessionId,
   canWrite,
+  canDelete,
   locked,
   onCountChange,
 }: {
   sessionId: string;
   canWrite: boolean;
+  canDelete: boolean;
   locked: boolean;
   onCountChange: (count: number) => void;
 }) {
@@ -45,6 +56,8 @@ export function EnrollmentsTab({
   const [drafts, setDrafts] = React.useState<Map<string, Draft>>(new Map());
   const [dirty, setDirty] = React.useState<Set<string>>(new Set());
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [wizardOpen, setWizardOpen] = React.useState(false);
+  const [wizardEnrollmentId, setWizardEnrollmentId] = React.useState<string | null>(null);
   const { pending, feedback, run } = useAction();
 
   const load = React.useCallback(async () => {
@@ -92,6 +105,7 @@ export function EnrollmentsTab({
   );
 
   const levels = React.useMemo(() => payload?.session.levels ?? [], [payload?.session.levels]);
+  const editable = canWrite && !locked;
 
   const columns = React.useMemo<Array<GridColumn<EnrollmentRow>>>(
     () => [
@@ -99,7 +113,22 @@ export function EnrollmentsTab({
         key: 'registrationNumber',
         header: t('enrollmentsTab.colRegistrationNumber'),
         kind: 'computed',
-        get: (row) => row.registrationNumber ?? '—',
+        get: (row) => row.registrationNumber ?? '',
+         render: (row) =>
+           editable ? (
+             <button
+               type="button"
+               onClick={() => {
+                 setWizardEnrollmentId(row.id);
+                 setWizardOpen(true);
+               }}
+               className="text-sm font-medium text-primary underline underline-offset-1 hover:no-underline"
+             >
+               {row.registrationNumber ?? '—'}
+             </button>
+           ) : (
+             <span className="text-sm">{row.registrationNumber ?? '—'}</span>
+           ),
       },
       {
         key: 'participantNumber',
@@ -114,7 +143,14 @@ export function EnrollmentsTab({
         // Dérivé par la même fonction que le serveur.
         get: (row) => deriveParticipantFullName(row.participant),
       },
-      {
+       {
+        key: 'status',
+        header: t('enrollmentsTab.colStatus'),
+        kind: 'computed',
+        get: (row) => row.status,
+        render: (row) => statusBadge(row, t),
+      },
+       {
         key: 'kind',
         header: t('enrollmentsTab.colType'),
         kind: 'select',
@@ -164,7 +200,7 @@ export function EnrollmentsTab({
         },
       },
     ],
-    [drafts, groupOptions, levels, t, sessionId],
+    [drafts, groupOptions, levels, t, sessionId, editable],
   );
 
   async function saveAll() {
@@ -222,8 +258,6 @@ export function EnrollmentsTab({
     );
   }
 
-  const editable = canWrite && !locked;
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -235,14 +269,16 @@ export function EnrollmentsTab({
              {t('enrollmentsTab.saveAll')} {dirty.size > 0 ? `(${dirty.size})` : ''}
            </Button>
 
-           <Button
-             variant="outline"
-             onClick={removeSelected}
-             disabled={!editable || pending || selected.size === 0}
-           >
-             <Trash2 />
-             {t('enrollmentsTab.remove')} {selected.size > 0 ? `(${selected.size})` : ''}
-           </Button>
+            {canDelete && (
+              <Button
+                variant="outline"
+                onClick={removeSelected}
+                disabled={!editable || pending || selected.size === 0}
+              >
+                <Trash2 />
+                {t('enrollmentsTab.remove')} {selected.size > 0 ? `(${selected.size})` : ''}
+              </Button>
+            )}
         </div>
 
         <ImportButton
@@ -294,27 +330,42 @@ export function EnrollmentsTab({
 
       <FeedbackBanner feedback={feedback} />
 
-      <EditableGrid
-        rows={payload.rows}
-        rowId={(row) => row.id}
-        columns={columns}
-        onChange={handleChange}
-        readOnly={!editable}
-        dirtyRowIds={dirty}
-        selection={{
-          selected,
-          onToggle: (id, checked) =>
-            setSelected((previous) => {
-              const next = new Set(previous);
-              if (checked) next.add(id);
-              else next.delete(id);
-              return next;
-            }),
-          onToggleAll: (checked) =>
-            setSelected(checked ? new Set(payload.rows.map((row) => row.id)) : new Set()),
-        }}
-        emptyLabel="Aucun inscrit. Utilisez « Inscrire des participants »."
-      />
+       <EditableGrid
+         rows={payload.rows}
+         rowId={(row) => row.id}
+         columns={columns}
+         onChange={handleChange}
+         readOnly={!editable}
+         dirtyRowIds={dirty}
+         selection={{
+           selected,
+           onToggle: (id, checked) =>
+             setSelected((previous) => {
+               const next = new Set(previous);
+               if (checked) next.add(id);
+               else next.delete(id);
+               return next;
+             }),
+           onToggleAll: (checked) =>
+             setSelected(checked ? new Set(payload.rows.map((row) => row.id)) : new Set()),
+         }}
+         emptyLabel="Aucun inscrit. Utilisez « Inscrire des participants »."
+       />
+
+        {wizardEnrollmentId && payload && (
+          <EnrollmentWizard
+            enrollment={
+              payload.rows.find((r) => r.id === wizardEnrollmentId) ?? payload.rows[0]!
+            }
+            sessionId={sessionId}
+            open={wizardOpen}
+            onOpenChange={(open) => {
+              setWizardOpen(open);
+              if (!open) setWizardEnrollmentId(null);
+            }}
+            onSaved={load}
+          />
+        )}
     </div>
   );
 }

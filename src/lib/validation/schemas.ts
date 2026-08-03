@@ -227,6 +227,20 @@ export const enrollSchema = z
     path: ['participantIds'],
   });
 
+export const enrollmentStatusSchema = z.enum([
+  'PENDING',
+  'CONFIRMED',
+  'ACTIVE',
+  'COMPLETED',
+  'CANCELLED',
+  'REJECTED',
+]);
+
+export const enrollmentStatusChangeSchema = z.object({
+  status: enrollmentStatusSchema,
+  reason: optionalText,
+});
+
 export const enrollmentUpdateSchema = z.object({
   kind: enrollmentKindSchema.optional(),
   assignedLevelId: idSchema.nullable().optional(),

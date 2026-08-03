@@ -57,6 +57,7 @@ export function Workspace({
           <EnrollmentsTab
             sessionId={session.id}
             canWrite={permissions.enrollment}
+            canDelete={permissions.canDeleteEnrollment}
             locked={locked}
             onCountChange={setEnrollmentCount}
           />

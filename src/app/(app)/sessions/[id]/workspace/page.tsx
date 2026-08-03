@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireActor } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { deriveSessionTitle, deriveYears } from '@/services/derive';
-import { canWrite } from '@/services/rbac';
+import { canWrite, isAdmin } from '@/services/rbac';
 import { Workspace } from './workspace';
 
 export const metadata: Metadata = { title: 'Espace de travail' };
@@ -53,6 +53,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
         scores: canWrite(actor, 'DeliberationEntry'),
         groups: canWrite(actor, 'StudentGroup'),
         session: canWrite(actor, 'TrainingSession'),
+        canDeleteEnrollment: isAdmin(actor.role),
       }}
     />
   );

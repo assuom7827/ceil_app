@@ -6,6 +6,8 @@
 
 **Équipe suggérée** : 1 dev full-stack + 1 reviewer.
 
+**Statut** : ✅ S2-03 & S2-04 implémentés — schema, migration, service de transition, endpoint API, tests unitaires & d'intégration.
+
 **Prérequis** :
 - Sprint 2 livré : modèle `SessionAgent`, service `delegation.ts`, RBAC `canReadSession` / `canWriteSession`, `assertSessionAccess` dans `locking.ts`, API `/agents` et `/delegable-agents`, UI de délégation, filtrage dashboard/liste sessions pour les `USER`.
 - Base de données migrée : table `session_agents` créée et peuplée.

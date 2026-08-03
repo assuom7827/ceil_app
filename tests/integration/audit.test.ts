@@ -221,6 +221,7 @@ describe.skipIf(!hasDb)('audit trail', () => {
   });
 
   it('loge la suppression d’une inscription', async () => {
+    signIn('ADMIN');
     const { training } = await makeTraining();
     const session = await createSession(training.id);
     const participants = await createParticipants(1);

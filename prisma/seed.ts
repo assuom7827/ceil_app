@@ -120,12 +120,17 @@ async function seedTrainings() {
       update: {
         arName: training.arName,
         code: training.code,
-        // `set` rend l'association idempotente : on ne cumule pas les niveaux.
-        levels: { set: levels.map(({ id }) => ({ id })) },
+      // Idempotente : on supprime les anciennes associations puis recrée.
+        TrainingToTrainingLevel: {
+          deleteMany: {},
+          create: levels.map(({ id }) => ({ training_levels: { connect: { id } } })),
+        },
       },
       create: {
         ...training,
-        levels: { connect: levels.map(({ id }) => ({ id })) },
+        TrainingToTrainingLevel: {
+          create: levels.map(({ id }) => ({ training_levels: { connect: { id } } })),
+        },
       },
     });
   }
