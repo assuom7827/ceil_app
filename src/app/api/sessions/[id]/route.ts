@@ -2,10 +2,23 @@ import { route, type HandlerContext } from '@/lib/api/handler';
 import { itemRoutes } from '@/lib/api/crud';
 import { trainingSessionCrud } from '@/lib/api/resources';
 import { conflictError, notFoundError } from '@/services/errors';
+import { assertSessionAccess } from '@/services/locking';
 
 const base = itemRoutes(trainingSessionCrud);
 
-export const GET = base.GET;
+export const GET = route<{ id: string }>(
+  { resource: 'TrainingSession', access: 'read' },
+  async ({ db, params, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
+    const found = await trainingSessionCrud.delegate(db).findUnique({
+      where: { id: params.id },
+      ...(trainingSessionCrud.include ? { include: trainingSessionCrud.include } : {}),
+    });
+    if (!found) throw notFoundError('Session de formation introuvable.', { id: params.id });
+    return found;
+  },
+);
+
 export const PATCH = base.PATCH;
 
 export const DELETE = route<{ id: string }>(

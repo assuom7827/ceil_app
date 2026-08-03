@@ -5,6 +5,7 @@
  * une requête forgée doit être refusée même si le bouton n'existe pas à l'écran.
  */
 import { forbiddenError, unauthorizedError } from './errors';
+import type { Db } from './db';
 
 export type Role = 'MANAGER' | 'USER' | 'ADMIN';
 
@@ -95,6 +96,57 @@ export function assertCanWrite(actor: Actor | null | undefined, resource: Resour
     throw forbiddenError(`Modification non autorisée sur ${resource} pour le rôle ${actor.role}.`, {
       resource,
       role: actor.role,
+    });
+  }
+}
+
+export async function canReadSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<boolean> {
+  if (!actor) return false;
+  if (hasFullAccess(actor.role)) return true;
+
+  const delegation = await db.sessionAgent.findFirst({
+    where: { trainingSessionId, userId: actor.id },
+    select: { id: true },
+  });
+  return !!delegation;
+}
+
+export async function canWriteSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<boolean> {
+  if (!actor) return false;
+  if (hasFullAccess(actor.role)) return true;
+  return canReadSession(actor, db, trainingSessionId);
+}
+
+export async function assertCanReadSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<void> {
+  if (!canReadSession(actor, db, trainingSessionId)) {
+    throw forbiddenError("Vous n'avez pas accès à cette session.", {
+      trainingSessionId,
+      role: actor?.role,
+    });
+  }
+}
+
+export async function assertCanWriteSession(
+  actor: Actor | null | undefined,
+  db: Db,
+  trainingSessionId: string,
+): Promise<void> {
+  if (!(await canWriteSession(actor, db, trainingSessionId))) {
+    throw forbiddenError("Vous n'avez pas les droits d'écriture sur cette session.", {
+      trainingSessionId,
+      role: actor?.role,
     });
   }
 }

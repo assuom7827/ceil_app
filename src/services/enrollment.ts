@@ -35,6 +35,7 @@ export interface EnrollOptions {
   kind?: EnrollmentKindLike;
   responsible?: string | null;
   actorId?: string;
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN';
 }
 
 /**
@@ -55,7 +56,11 @@ export async function enroll(
     throw validationError('Aucun participant sélectionné.');
   }
 
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    options.actorId && options.actorRole ? { id: options.actorId, role: options.actorRole } : null,
+  );
 
   return withTransaction(db, async (tx) => {
     const session = await tx.trainingSession.findUnique({
@@ -183,7 +188,11 @@ export async function createAndEnroll(
   input: QuickParticipantInput,
   options: EnrollOptions = {},
 ) {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    options.actorId && options.actorRole ? { id: options.actorId, role: options.actorRole } : null,
+  );
 
   return withTransaction(db, async (tx) => {
     const participant = await createParticipant(tx, input);
@@ -216,7 +225,12 @@ export async function createAndEnroll(
 // ---------------------------------------------------------------------------
 
 /** Retire une inscription. Refuse si la session est verrouillée (409). */
-export async function removeEnrollment(db: Db, enrollmentId: string, actorId?: string): Promise<void> {
+export async function removeEnrollment(
+  db: Db,
+  enrollmentId: string,
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
+): Promise<void> {
   const enrollment = await db.enrollment.findUnique({
     where: { id: enrollmentId },
     select: { trainingSessionId: true, participantId: true, registrationNumber: true },
@@ -224,7 +238,11 @@ export async function removeEnrollment(db: Db, enrollmentId: string, actorId?: s
   if (!enrollment) {
     throw notFoundError('Inscription introuvable.', { enrollmentId });
   }
-  await assertSessionWritable(db, enrollment.trainingSessionId);
+  await assertSessionWritable(
+    db,
+    enrollment.trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   if (actorId) {
     await logAudit(db, {
@@ -251,8 +269,13 @@ export async function assignGroup(
   groupType: 'SESSION' | 'EXAM',
   groupId: string | null,
   actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<{ updated: number }> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   if (groupId) {
     const group = await db.studentGroup.findFirst({

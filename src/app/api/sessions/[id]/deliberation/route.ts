@@ -2,11 +2,14 @@ import { route, readJson } from '@/lib/api/handler';
 import { deliberationBulkSchema } from '@/lib/validation/schemas';
 import { getDeliberation, upsertDeliberationEntry } from '@/services/deliberation';
 import { withTransaction } from '@/services/db';
+import { assertSessionAccess } from '@/services/locking';
 
-/** Lignes de la session avec `total` et `status` DÉRIVÉS (jamais stockés). */
 export const GET = route<{ id: string }>(
   { resource: 'DeliberationEntry', access: 'read' },
-  ({ db, params }) => getDeliberation(db, params.id),
+  async ({ db, params, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
+    return getDeliberation(db, params.id);
+  },
 );
 
 /**
@@ -17,11 +20,12 @@ export const GET = route<{ id: string }>(
 export const PUT = route<{ id: string }>(
   { resource: 'DeliberationEntry', access: 'write' },
   async ({ db, params, request, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
     const { entries } = await readJson(request, deliberationBulkSchema);
 
     return withTransaction(db, async (tx) => {
       for (const { enrollmentId, ...values } of entries) {
-        await upsertDeliberationEntry(tx, params.id, enrollmentId, values, actor.id);
+        await upsertDeliberationEntry(tx, params.id, enrollmentId, values, actor.id, actor.role);
       }
       return { updated: entries.length };
     });

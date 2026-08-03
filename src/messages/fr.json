@@ -621,5 +621,21 @@
   "positioningTotalColumn": "Total",
   "qrCode": {
     "verify": "Vérifier cette attestation"
+  },
+  "delegation": {
+    "title": "Délégation",
+    "subtitle": "Attribuez cette session à des agents de saisie.",
+    "delegateButton": "Déléguer",
+    "undelegateButton": "Retirer",
+    "delegateConfirm": "Déléguer cette session à {name} ?",
+    "undelegateConfirm": "Retirer la délégation de {name} ?",
+    "agents": "Agents délégués",
+    "noAgents": "Aucun agent délégué.",
+    "user": "Utilisateur",
+    "email": "E-mail",
+    "assignedAt": "Assigné le",
+    "badge": "Délégué",
+    "manageTitle": "Gérer la délégation",
+    "manageDescription": "Ajoutez ou retirez des agents autorisés à travailler sur cette session."
   }
 }

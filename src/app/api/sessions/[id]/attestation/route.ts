@@ -2,18 +2,12 @@ import { NextResponse } from 'next/server';
 import { route } from '@/lib/api/handler';
 import { buildAttestationOdt } from '@/services/certificates';
 import { odtToPdf } from '@/services/odt-render';
+import { assertSessionAccess } from '@/services/locking';
 
-/**
- * Attestations d'inscription, remplies depuis le gabarit ODT du modèle de la
- * session. Une page par inscrit, un seul fichier.
- *
- * | Paramètre      | Effet                                                     |
- * | -------------- | --------------------------------------------------------- |
- * | `enrollmentId` | Une seule attestation, celle de cette inscription         |
- */
 export const GET = route<{ id: string }>(
   { resource: 'TrainingSession', access: 'read' },
-  async ({ db, params, url }) => {
+  async ({ db, params, url, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
     const enrollmentId = url.searchParams.get('enrollmentId') ?? undefined;
 
     const built = await buildAttestationOdt(db, params.id, enrollmentId);

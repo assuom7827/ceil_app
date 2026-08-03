@@ -2,23 +2,12 @@ import { NextResponse } from 'next/server';
 import { route } from '@/lib/api/handler';
 import { buildCertificateOdt } from '@/services/certificates';
 import { odtToPdf } from '@/services/odt-render';
+import { assertSessionAccess } from '@/services/locking';
 
-/**
- * Attestations de réussite, remplies depuis le gabarit ODT du modèle de la
- * session. Une page par admis, un seul fichier — éditer cent attestations une
- * par une n'est pas un geste tenable.
- *
- * | Paramètre      | Effet                                                     |
- * | -------------- | --------------------------------------------------------- |
- * | `enrollmentId` | Une seule attestation, celle de cette inscription         |
- * | `format=odt`   | Rend l'ODT rempli au lieu du PDF, pour retouche manuelle  |
- *
- * Le filtre d'admission est celui du service : un ajourné ne peut pas recevoir
- * d'attestation de réussite par cette route.
- */
 export const GET = route<{ id: string }>(
   { resource: 'TrainingSession', access: 'read' },
-  async ({ db, params, url }) => {
+  async ({ db, params, url, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
     const enrollmentId = url.searchParams.get('enrollmentId') ?? undefined;
     const wantsOdt = url.searchParams.get('format') === 'odt';
 

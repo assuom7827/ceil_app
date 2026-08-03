@@ -443,8 +443,14 @@ export async function importEnrollments(
   db: Db,
   trainingSessionId: string,
   rows: RawRow[],
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<ImportEnrollmentsReport> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const { parsed, issues } = parseEnrollmentRows(rows);
   const report: ImportEnrollmentsReport = {
@@ -699,8 +705,14 @@ export async function importDeliberationScores(
   db: Db,
   trainingSessionId: string,
   rows: RawRow[],
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<ImportScoresReport> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const { parsed, issues } = parseScoreRows(
     rows,

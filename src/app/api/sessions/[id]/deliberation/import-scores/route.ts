@@ -4,8 +4,8 @@ import { importDeliberationScores, parseTabular } from '@/services/imports';
 /** Import des 4 notes (E.O, E.E, C.O, C.E), rapprochées par matricule. */
 export const POST = route<{ id: string }>(
   { resource: 'DeliberationEntry', access: 'write' },
-  async ({ db, params, request }) => {
+  async ({ db, params, request, actor }) => {
     const file = await readUploadedFile(request);
-    return importDeliberationScores(db, params.id, parseTabular(file));
+    return importDeliberationScores(db, params.id, parseTabular(file), actor.id, actor.role);
   },
 );

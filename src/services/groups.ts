@@ -29,8 +29,14 @@ export async function organizeGroups(
   db: Db,
   trainingSessionId: string,
   groupType: GroupTypeLike,
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<OrganizeGroupsResult> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const templates = await db.studentGroup.findMany({
     where: { isTemplate: true, groupType, disabled: false },
@@ -114,8 +120,14 @@ export async function organizeGroupsByLevel(
   db: Db,
   trainingSessionId: string,
   options: OrganizeByLevelOptions = {},
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<OrganizeByLevelResult> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const templates = await db.studentGroup.findMany({
     where: { isTemplate: true, groupType: 'SESSION', disabled: false },
@@ -228,8 +240,14 @@ export interface AssignByLevelResult {
 export async function assignGroupsByLevel(
   db: Db,
   trainingSessionId: string,
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<AssignByLevelResult> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const groups = await db.studentGroup.findMany({
     where: {
@@ -349,8 +367,14 @@ export interface AssignExamGroupsResult {
 export async function assignExamGroups(
   db: Db,
   trainingSessionId: string,
+  actorId?: string,
+  actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<AssignExamGroupsResult> {
-  await assertSessionWritable(db, trainingSessionId);
+  await assertSessionWritable(
+    db,
+    trainingSessionId,
+    actorId && actorRole ? { id: actorId, role: actorRole } : null,
+  );
 
   const groups = await db.studentGroup.findMany({
     where: { trainingSessionId, groupType: 'EXAM', isTemplate: false, disabled: false },

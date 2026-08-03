@@ -16,6 +16,7 @@ import { requireActor } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { deriveSessionTitle, deriveYears } from '@/services/derive';
 import { canWrite, canManageSessions } from '@/services/rbac';
+import { getUserDelegatedSessions } from '@/services/delegation';
 import { NewSessionButton } from './new-session-button';
 import { SessionActions } from './session-actions';
 
@@ -29,21 +30,26 @@ export default async function SessionsPage() {
   const t = await getTranslations();
   const canManage = canManageSessions(actor.role);
 
-  const sessions = await prisma.trainingSession.findMany({
-    where: { disabled: false },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      state: true,
-      academicYear: true,
-      dateFrom: true,
-      dateTo: true,
-      admissionThreshold: true,
-      training: { select: { frName: true, arName: true } },
-      trainingLevel: { select: { name: true } },
-      _count: { select: { enrollments: true, groups: true } },
-    },
-  });
+  const where = canManage ? { disabled: false } : { disabled: false, agents: { some: { userId: actor.id } } };
+
+  const [sessions, delegatedSessionIds] = await Promise.all([
+    prisma.trainingSession.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        state: true,
+        academicYear: true,
+        dateFrom: true,
+        dateTo: true,
+        admissionThreshold: true,
+        training: { select: { frName: true, arName: true } },
+        trainingLevel: { select: { name: true } },
+        _count: { select: { enrollments: true, groups: true } },
+      },
+    }),
+    canManage ? Promise.resolve<string[]>([]) : getUserDelegatedSessions(prisma, actor.id),
+  ]);
 
   return (
     <main className="space-y-6">
@@ -90,11 +96,16 @@ export default async function SessionsPage() {
                         {years.yearFrom ? `${years.yearFrom} → ${years.yearTo ?? '…'}` : '—'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={session.state === 'OPEN' ? 'secondary' : 'outline'}>
-                          {session.state === 'OPEN'
-                            ? t('session.state.open')
-                            : t('session.state.locked')}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={session.state === 'OPEN' ? 'secondary' : 'outline'}>
+                            {session.state === 'OPEN'
+                              ? t('session.state.open')
+                              : t('session.state.locked')}
+                          </Badge>
+                          {!canManage && delegatedSessionIds.includes(session.id) ? (
+                            <Badge variant="outline">{t('delegation.badge')}</Badge>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell className="text-end tabular-nums">
                         {session.admissionThreshold}

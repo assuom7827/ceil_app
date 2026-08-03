@@ -1,17 +1,12 @@
 import { route } from '@/lib/api/handler';
 import { deriveParticipantFullName, deriveSessionTitle } from '@/services/derive';
 import { notFoundError } from '@/services/errors';
+import { assertSessionAccess } from '@/services/locking';
 
-/**
- * Grille des inscrits de la session.
- *
- * Les valeurs dérivées (`fullName`, `title`) sont calculées ici par les mêmes
- * fonctions que celles importées par l'UI : la grille n'a jamais à les
- * recalculer autrement.
- */
 export const GET = route<{ id: string }>(
   { resource: 'Enrollment', access: 'read' },
-  async ({ db, params }) => {
+  async ({ db, params, actor }) => {
+    await assertSessionAccess(db, params.id, actor);
     const session = await db.trainingSession.findUnique({
       where: { id: params.id },
       select: {

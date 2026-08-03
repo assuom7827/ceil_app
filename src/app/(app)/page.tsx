@@ -6,6 +6,9 @@ import { requireActor } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { computeAdmission } from '@/services/deliberation';
 import { deriveSessionTitle } from '@/services/derive';
+import { canManageSessions } from '@/services/rbac';
+import { getUserDelegatedSessions } from '@/services/delegation';
+import type { Actor } from '@/services/rbac';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -13,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Les compteurs viennent des mêmes services que l'API : aucun calcul parallèle. */
-async function loadStats(noTitle: string) {
+async function loadStats(noTitle: string, actor: Actor) {
   const [participants, openSessions, lockedSessions, confirmedReceipts, recent] = await Promise.all(
     [
       prisma.participant.count(),
@@ -36,14 +39,28 @@ async function loadStats(noTitle: string) {
     ],
   );
 
+  const filtered = canManageSessions(actor.role)
+    ? recent
+    : recent.filter((_session) => {
+        // Fallback local si la délégation n'est pas encore calculée :
+        // on garde le comportement précédent pour ne pas casser l'affichage.
+        return true;
+      });
+
+  const delegatedSessionIds = canManageSessions(actor.role)
+    ? new Set<string>()
+    : new Set(await getUserDelegatedSessions(prisma, actor.id));
+
   const sessions = await Promise.all(
-    recent.map(async (session) => ({
-      id: session.id,
-      title: deriveSessionTitle(session) || noTitle,
-      state: session.state,
-      enrollments: session._count.enrollments,
-      admission: await computeAdmission(prisma, session.id),
-    })),
+    filtered
+      .filter((session) => canManageSessions(actor.role) || delegatedSessionIds.has(session.id))
+      .map(async (session) => ({
+        id: session.id,
+        title: deriveSessionTitle(session) || noTitle,
+        state: session.state,
+        enrollments: session._count.enrollments,
+        admission: await computeAdmission(prisma, session.id),
+      })),
   );
 
   return { participants, openSessions, lockedSessions, confirmedReceipts, sessions };
@@ -63,9 +80,9 @@ function Kpi({ label, value }: { label: string; value: number }) {
 }
 
 export default async function DashboardPage() {
-  await requireActor();
+  const actor = await requireActor();
   const t = await getTranslations();
-  const stats = await loadStats(t('session.noTitle'));
+  const stats = await loadStats(t('session.noTitle'), actor);
 
   return (
     <main className="space-y-8">

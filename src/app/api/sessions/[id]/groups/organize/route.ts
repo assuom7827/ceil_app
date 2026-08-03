@@ -9,10 +9,10 @@ import { organizeGroups } from '@/services/groups';
  */
 export const POST = route<{ id: string }>(
   { resource: 'StudentGroup', access: 'write' },
-  ({ db, params, url }) => {
+  async ({ db, params, url, actor }) => {
     const { type } = organizeGroupsSchema.parse({
       type: url.searchParams.get('type') ?? undefined,
     });
-    return organizeGroups(db, params.id, type);
+    return organizeGroups(db, params.id, type, actor.id, actor.role);
   },
 );

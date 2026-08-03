@@ -3,5 +3,7 @@ import { assignExamGroups } from '@/services/groups';
 
 export const POST = route<{ id: string }>(
   { resource: 'StudentGroup', access: 'write' },
-  ({ db, params }) => assignExamGroups(db, params.id),
+  async ({ db, params, actor }) => {
+    return assignExamGroups(db, params.id, actor.id, actor.role);
+  },
 );

@@ -5,8 +5,8 @@ import { assignGroup } from '@/services/enrollment';
 /** Affectation de groupe en masse depuis la grille des inscrits. */
 export const POST = route<{ id: string }>(
   { resource: 'Enrollment', access: 'write' },
-  async ({ db, params, request }) => {
+  async ({ db, params, request, actor }) => {
     const input = await readJson(request, assignGroupSchema);
-    return assignGroup(db, params.id, input.enrollmentIds, input.groupType, input.groupId);
+    return assignGroup(db, params.id, input.enrollmentIds, input.groupType, input.groupId, actor.id, actor.role);
   },
 );

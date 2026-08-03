@@ -64,7 +64,11 @@ async function toApiError(response: Response): Promise<ApiError> {
 async function parse<T>(response: Response): Promise<T> {
   if (!response.ok) throw await toApiError(response);
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+
+  const text = await response.text();
+  if (!text.trim()) return undefined as T;
+
+  return JSON.parse(text) as T;
 }
 
 export async function apiGet<T>(url: string): Promise<T> {

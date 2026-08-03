@@ -1,9 +1,11 @@
 import { route } from '@/lib/api/handler';
 import { computeAdmission } from '@/services/deliberation';
 import { deriveSessionTitle } from '@/services/derive';
+import { canManageSessions } from '@/services/rbac';
+import { getUserDelegatedSessions } from '@/services/delegation';
 
 /** KPIs du tableau de bord. Les admis sont DÉRIVÉS, jamais lus dans une colonne. */
-export const GET = route({ resource: 'TrainingSession', access: 'read' }, async ({ db }) => {
+export const GET = route({ resource: 'TrainingSession', access: 'read' }, async ({ db, actor }) => {
   const [participants, openSessions, lockedSessions, confirmedReceipts, recentSessions] =
     await Promise.all([
       db.participant.count(),
@@ -25,9 +27,17 @@ export const GET = route({ resource: 'TrainingSession', access: 'read' }, async 
       }),
     ]);
 
+  const delegatedSessionIds = canManageSessions(actor.role)
+    ? new Set<string>()
+    : new Set(await getUserDelegatedSessions(db, actor.id));
+
+  const filteredSessions = recentSessions.filter((session) =>
+    canManageSessions(actor.role) || delegatedSessionIds.has(session.id),
+  );
+
   // Le nombre d'admis n'existe dans aucune colonne : il se calcule.
   const admissions = await Promise.all(
-    recentSessions.map(async (session) => ({
+    filteredSessions.map(async (session) => ({
       id: session.id,
       title: deriveSessionTitle(session),
       state: session.state,

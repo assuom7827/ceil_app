@@ -9,8 +9,8 @@ import { parseTabular } from '@/services/imports';
  */
 export const POST = route<{ id: string }>(
   { resource: 'Enrollment', access: 'write' },
-  async ({ db, params, request }) => {
+  async ({ db, params, request, actor }) => {
     const file = await readUploadedFile(request);
-    return importEnrollments(db, params.id, parseTabular(file));
+    return importEnrollments(db, params.id, parseTabular(file), actor.id, actor.role);
   },
 );
