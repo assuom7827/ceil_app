@@ -182,9 +182,13 @@ export const trainingSessionSchema = z.object({
   academicYear: optionalText,
   dateFrom: optionalDate,
   dateTo: optionalDate,
+  registrationStartDate: optionalDate,
+  registrationEndDate: optionalDate,
   diplomaModelId: idSchema.nullable().optional(),
   admissionThreshold: z.coerce.number().min(0).optional(),
   matriculePrefix: optionalText,
+  mode: z.enum(['PRESENTIAL', 'REMOTE', 'HYBRID']).optional(),
+  status: z.enum(['DRAFT', 'SCHEDULED', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional(),
   disabled: optionalBoolean,
 });
 

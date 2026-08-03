@@ -7,6 +7,8 @@ export interface WorkspaceSession {
   academicYear: string | null;
   years: { yearFrom: number | null; yearTo: number | null };
   state: 'OPEN' | 'LOCKED';
+  mode: 'PRESENTIAL' | 'REMOTE' | 'HYBRID' | null;
+  status: 'DRAFT' | 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | null;
   admissionThreshold: number;
   matriculePrefix: string | null;
 }

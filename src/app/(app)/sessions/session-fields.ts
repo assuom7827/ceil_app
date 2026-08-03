@@ -27,6 +27,30 @@ export const sessionFormFields: FieldDef[] = [
   { kind: 'text', name: 'code', label: 'Code' },
   { kind: 'date', name: 'dateFrom', label: 'Début' },
   { kind: 'date', name: 'dateTo', label: 'Fin' },
+  { kind: 'date', name: 'registrationStartDate', label: 'Début des inscriptions' },
+  { kind: 'date', name: 'registrationEndDate', label: 'Fin des inscriptions' },
+  {
+    kind: 'select',
+    name: 'mode',
+    label: 'Mode',
+    options: [
+      { value: 'PRESENTIAL', label: 'Présentiel' },
+      { value: 'REMOTE', label: 'À distance' },
+      { value: 'HYBRID', label: 'Hybride' },
+    ],
+  },
+  {
+    kind: 'select',
+    name: 'status',
+    label: 'Statut',
+    options: [
+      { value: 'DRAFT', label: 'Brouillon' },
+      { value: 'SCHEDULED', label: 'Planifiée' },
+      { value: 'ONGOING', label: 'En cours' },
+      { value: 'COMPLETED', label: 'Terminée' },
+      { value: 'CANCELLED', label: 'Annulée' },
+    ],
+  },
   {
     kind: 'number',
     name: 'admissionThreshold',

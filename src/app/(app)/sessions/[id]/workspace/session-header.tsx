@@ -69,6 +69,28 @@ export function SessionHeader({
             <Badge variant={locked ? 'outline' : 'secondary'} data-testid="session-state">
               {locked ? t('session.state.locked') : t('session.state.open')}
             </Badge>
+            {session.mode ? (
+              <Badge variant="outline" data-testid="session-mode">
+                {session.mode === 'PRESENTIAL'
+                  ? t('session.mode.presential')
+                  : session.mode === 'REMOTE'
+                    ? t('session.mode.remote')
+                    : t('session.mode.hybrid')}
+              </Badge>
+            ) : null}
+            {session.status ? (
+              <Badge variant="secondary" data-testid="session-status">
+                {session.status === 'DRAFT'
+                  ? t('session.status.draft')
+                  : session.status === 'SCHEDULED'
+                    ? t('session.status.scheduled')
+                    : session.status === 'ONGOING'
+                      ? t('session.status.ongoing')
+                      : session.status === 'COMPLETED'
+                        ? t('session.status.completed')
+                        : t('session.status.cancelled')}
+              </Badge>
+            ) : null}
           </div>
           <p className="text-sm text-muted-foreground">
             {session.trainingName}

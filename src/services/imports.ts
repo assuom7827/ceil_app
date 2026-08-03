@@ -8,7 +8,7 @@
 import * as XLSX from 'xlsx';
 import type { Db } from './db';
 import { withTransaction } from './db';
-import { validationError } from './errors';
+import { validationError, notFoundError } from './errors';
 import { assertPositioningTestWritable, assertSessionWritable } from './locking';
 import { createParticipant, enroll } from './enrollment';
 import type { ParticipantTypeLike } from './derive';
@@ -149,6 +149,30 @@ export const COLUMNS = {
   writtenExpression: ['ee', 'e e', 'expression ecrite', 'التعبير الكتابي'],
   oralComprehension: ['co', 'c o', 'comprehension orale', 'الفهم الشفوي'],
   writtenComprehension: ['ce', 'c e', 'comprehension ecrite', 'الفهم الكتابي'],
+  positioningTest1Code: [
+    'positioning_test_1_code',
+    'test 1 code',
+    'test de positionnement 1',
+    'code test 1',
+  ],
+  positioningTest1Date: [
+    'positioning_test_1_date',
+    'test 1 date',
+    'date test 1',
+    'date du test 1',
+  ],
+  positioningTest2Code: [
+    'positioning_test_2_code',
+    'test 2 code',
+    'test de positionnement 2',
+    'code test 2',
+  ],
+  positioningTest2Date: [
+    'positioning_test_2_date',
+    'test 2 date',
+    'date test 2',
+    'date du test 2',
+  ],
 } as const;
 
 /** `type` accepte les libellés français comme les codes internes. */
@@ -304,6 +328,10 @@ export interface ParsedEnrollmentRow {
   phone: string | null;
   email: string | null;
   registrationNumber: string | null;
+  positioningTest1Code: string | null;
+  positioningTest1Date: string | null;
+  positioningTest2Code: string | null;
+  positioningTest2Date: string | null;
 }
 
 export function parseEnrollmentRows(rows: RawRow[]): {
@@ -321,6 +349,10 @@ export function parseEnrollmentRows(rows: RawRow[]): {
     const firstName = pick(row, COLUMNS.firstName);
     const arabName = pick(row, COLUMNS.arabName);
     const registrationNumber = pick(row, COLUMNS.registrationNumber);
+    const positioningTest1Code = pick(row, COLUMNS.positioningTest1Code);
+    const positioningTest1Date = pick(row, COLUMNS.positioningTest1Date);
+    const positioningTest2Code = pick(row, COLUMNS.positioningTest2Code);
+    const positioningTest2Date = pick(row, COLUMNS.positioningTest2Date);
 
     // Une ligne entièrement vide est ignorée sans bruit. En revanche une ligne
     // qui porte des données mais aucun identifiant est SIGNALÉE : la passer
@@ -358,6 +390,10 @@ export function parseEnrollmentRows(rows: RawRow[]): {
       phone: pick(row, COLUMNS.phone),
       email: pick(row, COLUMNS.email),
       registrationNumber,
+      positioningTest1Code,
+      positioningTest1Date,
+      positioningTest2Code,
+      positioningTest2Date,
     });
   });
 
@@ -375,6 +411,63 @@ export interface ImportEnrollmentsReport {
   /** Déjà inscrits : ignorés sans erreur. */
   skipped: number;
   issues: ImportIssue[];
+}
+
+/** Champs de test de positionnement qu'un import peut renseigner. */
+const POSITIONING_TEST_FIELDS = [
+  'positioningTest1Code',
+  'positioningTest1Date',
+  'positioningTest2Code',
+  'positioningTest2Date',
+] as const;
+
+type PositioningTestField = (typeof POSITIONING_TEST_FIELDS)[number];
+
+/**
+ * Crée ou réutilise un test de positionnement pour la session, puis
+ * rattache l'inscription à ce test via un `PositioningScore`.
+ *
+ * Si le code est déjà associé à un test existant pour cette session,
+ * on le réutilise. Sinon on en crée un nouveau.
+ */
+async function linkEnrollmentToPositioningTest(
+  tx: Db,
+  trainingSessionId: string,
+  enrollmentId: string,
+  code: string | null,
+  dateText: string | null,
+): Promise<void> {
+  if (!code) return;
+
+  let test = await tx.positioningTest.findFirst({
+    where: {
+      trainingSessionId,
+      title: code,
+    },
+    select: { id: true },
+  });
+
+  if (!test) {
+    test = await tx.positioningTest.create({
+      data: {
+        title: code,
+        date: dateText ? new Date(dateText) : null,
+        trainingSessionId,
+        trainingId: (
+          await tx.trainingSession.findUnique({
+            where: { id: trainingSessionId },
+            select: { trainingId: true },
+          })
+        )?.trainingId,
+      },
+    });
+  }
+
+  await tx.positioningScore.upsert({
+    where: { enrollmentId },
+    update: { positioningTestId: test.id },
+    create: { enrollmentId, positioningTestId: test.id },
+  });
 }
 
 /** Champs d'état civil qu'un import peut renseigner sur une fiche existante. */
@@ -433,11 +526,7 @@ export function planCivilStatusUpdate(
 }
 
 /**
- * Crée les participants absents puis les inscrit à la session, en une opération.
- *
- * Un participant est rapproché par son matricule lorsque le fichier en fournit
- * un ; sinon il est créé. On ne rapproche jamais sur le seul nom : deux
- * homonymes sont deux personnes.
+ * Import d'inscriptions avec création optionnelle de tests de positionnement.
  */
 export async function importEnrollments(
   db: Db,
@@ -467,6 +556,7 @@ export async function importEnrollments(
 
   return withTransaction(db, async (tx) => {
     const participantIds: string[] = [];
+    const lineToParticipantId = new Map<number, string>();
 
     for (const row of parsed) {
       if (row.registrationNumber) {
@@ -482,6 +572,7 @@ export async function importEnrollments(
         });
         if (existing) {
           participantIds.push(existing.id);
+          lineToParticipantId.set(row.line, existing.id);
           report.participantsMatched += 1;
 
           const { data, conflicts } = planCivilStatusUpdate(existing, row);
@@ -523,12 +614,59 @@ export async function importEnrollments(
         email: row.email,
       });
       participantIds.push(created.id);
+      lineToParticipantId.set(row.line, created.id);
       report.participantsCreated += 1;
     }
 
     const result = await enroll(tx, trainingSessionId, participantIds);
     report.enrolled = result.created;
     report.skipped = result.skipped;
+
+    // Rattachement des tests de positionnement.
+    const hasPositioningData = parsed.some(
+      (row) =>
+        row.positioningTest1Code ||
+        row.positioningTest1Date ||
+        row.positioningTest2Code ||
+        row.positioningTest2Date,
+    );
+
+    if (hasPositioningData) {
+      // On récupère les inscriptions créées pour cette session.
+      const enrollments = await tx.enrollment.findMany({
+        where: { trainingSessionId },
+        select: { id: true, participantId: true },
+      });
+      const enrollmentByParticipantId = new Map(
+        enrollments.map((e) => [e.participantId, e.id]),
+      );
+
+      for (const row of parsed) {
+        const participantId = lineToParticipantId.get(row.line);
+        if (!participantId) continue;
+        const enrollmentId = enrollmentByParticipantId.get(participantId);
+        if (!enrollmentId) continue;
+
+        if (row.positioningTest1Code) {
+          await linkEnrollmentToPositioningTest(
+            tx,
+            trainingSessionId,
+            enrollmentId,
+            row.positioningTest1Code,
+            row.positioningTest1Date,
+          );
+        }
+        if (row.positioningTest2Code) {
+          await linkEnrollmentToPositioningTest(
+            tx,
+            trainingSessionId,
+            enrollmentId,
+            row.positioningTest2Code,
+            row.positioningTest2Date,
+          );
+        }
+      }
+    }
 
     return report;
   });

@@ -17,6 +17,8 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
     select: {
       id: true,
       state: true,
+      mode: true,
+      status: true,
       academicYear: true,
       dateFrom: true,
       dateTo: true,
@@ -39,6 +41,8 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
         academicYear: session.academicYear,
         years: deriveYears(session),
         state: session.state,
+        mode: session.mode,
+        status: session.status,
         admissionThreshold: session.admissionThreshold,
         matriculePrefix: session.matriculePrefix,
       }}

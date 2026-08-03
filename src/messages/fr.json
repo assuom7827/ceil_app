@@ -103,6 +103,18 @@
     "lockedNotice": "Session verrouillée : les grilles sont en lecture seule. Déverrouillez-la pour reprendre la saisie.",
     "thresholdSaved": "Seuil d'admission fixé à {value}.",
     "counterEnrollments": "Inscrits",
+    "mode": {
+      "presential": "Présentiel",
+      "remote": "À distance",
+      "hybrid": "Hybride"
+    },
+    "status": {
+      "draft": "Brouillon",
+      "scheduled": "Planifiée",
+      "ongoing": "En cours",
+      "completed": "Terminée",
+      "cancelled": "Annulée"
+    },
     "counterGroups": "Groupes",
     "counterAdmitted": "Admis",
     "counterRefused": "Ajournés",
@@ -159,6 +171,8 @@
     "recentDescription": "Les admis sont calculés à la lecture, selon le seuil propre à chaque session.",
     "colSession": "Session",
     "colState": "État",
+    "colMode": "Mode",
+    "colStatus": "Statut",
     "colEnrollments": "Inscrits",
     "colPending": "Non délibérés"
   },
@@ -171,6 +185,8 @@
     "colSession": "Session",
     "colYears": "Années",
     "colState": "État",
+    "colMode": "Mode",
+    "colStatus": "Statut",
     "colThreshold": "Seuil",
     "colEnrollments": "Inscrits",
     "colGroups": "Groupes",

@@ -103,6 +103,18 @@
     "lockedNotice": "الدورة مقفلة: الشبكات للقراءة فقط. افتحها لاستئناف الإدخال.",
     "thresholdSaved": "تم تحديد عتبة القبول على {value}.",
     "counterEnrollments": "المسجلون",
+    "mode": {
+      "presential": "حضوري",
+      "remote": "عن بُعد",
+      "hybrid": "هجين"
+    },
+    "status": {
+      "draft": "مسودة",
+      "scheduled": "مخططة",
+      "ongoing": "جارية",
+      "completed": "منتهية",
+      "cancelled": "ملغاة"
+    },
     "counterGroups": "الأفواج",
     "counterAdmitted": "الناجحون",
     "counterRefused": "المؤجلون",
@@ -159,6 +171,8 @@
     "recentDescription": "يُحسب الناجحون عند القراءة، وفق العتبة الخاصة بكل دورة.",
     "colSession": "الدورة",
     "colState": "الحالة",
+    "colMode": "الوضع",
+    "colStatus": "الوضع",
     "colEnrollments": "المسجلون",
     "colPending": "غير مداول"
   },
@@ -171,6 +185,8 @@
     "colSession": "الدورة",
     "colYears": "السنوات",
     "colState": "الحالة",
+    "colMode": "الوضع",
+    "colStatus": "الوضع",
     "colThreshold": "العتبة",
     "colEnrollments": "المسجلون",
     "colGroups": "الأفواج",

@@ -39,6 +39,8 @@ export default async function SessionsPage() {
       select: {
         id: true,
         state: true,
+        mode: true,
+        status: true,
         academicYear: true,
         dateFrom: true,
         dateTo: true,
@@ -77,6 +79,8 @@ export default async function SessionsPage() {
                 <TableRow>
                   <TableHead>{t('sessions.colSession')}</TableHead>
                   <TableHead>{t('sessions.colYears')}</TableHead>
+                  <TableHead>{t('sessions.colMode')}</TableHead>
+                  <TableHead>{t('sessions.colStatus')}</TableHead>
                   <TableHead>{t('sessions.colState')}</TableHead>
                   <TableHead className="text-end">{t('sessions.colThreshold')}</TableHead>
                   <TableHead className="text-end">{t('sessions.colEnrollments')}</TableHead>
@@ -94,6 +98,16 @@ export default async function SessionsPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {years.yearFrom ? `${years.yearFrom} → ${years.yearTo ?? '…'}` : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {session.mode
+                          ? t(`session.mode.${session.mode.toLowerCase()}`)
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {session.status
+                          ? t(`session.status.${session.status.toLowerCase()}`)
+                          : '—'}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-2">

@@ -69,6 +69,22 @@ enum WorkflowState {
   LOCKED
 }
 
+/// Mode de delivery d'une session de formation.
+enum SessionMode {
+  PRESENTIAL
+  REMOTE
+  HYBRID
+}
+
+/// Cycle de vie d'une session de formation.
+enum SessionStatus {
+  DRAFT
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
 enum GroupType {
   SESSION
   EXAM
@@ -340,16 +356,31 @@ model Participant {
 // ============================================================================
 
 model TrainingSession {
+  /// Identifiant unique de la session.
   id                 String        @id @default(cuid())
+  /// Code interne de la session (ex. « ANG-2026-A »). Unique si renseigné.
   code               String?       @unique
+  /// Année académique de la session (ex. « 2025-2026 »).
   academicYear       String?
+  /// Date de début de la session (premier jour de cours).
   dateFrom           DateTime?
+  /// Date de fin de la session (dernier jour de cours).
   dateTo             DateTime?
+  /// Période pendant laquelle les inscriptions sont ouvertes.
+  registrationStartDate DateTime?
+  /// Date de clôture des inscriptions.
+  registrationEndDate   DateTime?
   /// Seuil d'admission propre à la session (somme des 4 compétences).
   admissionThreshold Float         @default(50)
   /// Préfixe des matricules d'inscription générés pour cette session.
   matriculePrefix    String?
+  /// Mode de delivery de la session.
+  mode               SessionMode   @default(PRESENTIAL)
+  /// État de cycle de vie de la session.
+  status             SessionStatus @default(DRAFT)
+  /// État de verrouillage (OPEN / LOCKED) — contrôle l'écriture sur les inscriptions et notes.
   state              WorkflowState @default(OPEN)
+  /// Soft delete : vrai masque la session pour les rôles USER.
   disabled           Boolean       @default(false)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
@@ -367,13 +398,18 @@ model TrainingSession {
   /// Groupes réels de la session (les gabarits n'ont pas de session).
   groups      StudentGroup[]
   receipts    PaymentReceipt[]
+  /// Agents délégués (USER) autorisés à écrire sur cette session.
   agents      SessionAgent[]
+  /// Tests de positionnement rattachés directement à cette session.
+  positioningTests PositioningTest[]
 
   @@index([trainingId])
   @@index([trainingLevelId])
   @@index([academicYear])
   @@index([state])
   @@index([disabled])
+  @@index([mode])
+  @@index([status])
   @@map("training_sessions")
 }
 
@@ -491,8 +527,11 @@ model PositioningTest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trainingId String
-  training   Training @relation(fields: [trainingId], references: [id], onDelete: Restrict)
+  trainingId String?
+  training   Training? @relation(fields: [trainingId], references: [id], onDelete: Restrict)
+
+  trainingSessionId String?
+  trainingSession   TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
 
   diplomaModelId String?
   diplomaModel   DiplomaModel? @relation(fields: [diplomaModelId], references: [id], onDelete: SetNull)
@@ -500,6 +539,7 @@ model PositioningTest {
   scores PositioningScore[]
 
   @@index([trainingId])
+  @@index([trainingSessionId])
   @@index([state])
   @@index([disabled])
   @@map("positioning_tests")

@@ -269,6 +269,8 @@ async function seedDemoSession() {
       dateTo: new Date('2026-06-30'),
       admissionThreshold: 50,
       matriculePrefix: 'CEIL-ANG-2526',
+      mode: 'PRESENTIAL',
+      status: 'SCHEDULED',
     },
   });
 

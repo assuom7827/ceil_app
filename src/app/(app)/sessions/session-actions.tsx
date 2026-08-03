@@ -54,6 +54,8 @@ export function SessionActions({
         trainingId: (session['training'] as ResourceRecord | undefined)?.['id'],
         trainingLevelId: (session['trainingLevel'] as ResourceRecord | undefined)?.['id'],
         diplomaModelId: (session['diplomaModel'] as ResourceRecord | undefined)?.['id'],
+        mode: session['mode'],
+        status: session['status'],
       };
       setRecord(flattened);
     } catch (caught) {

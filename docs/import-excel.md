@@ -135,6 +135,32 @@ une personne.
 > Le rapprochement ne se fait **jamais sur le seul nom** : deux homonymes sont
 > deux personnes différentes. Sans matricule, un participant est créé.
 
+### Tests de positionnement (S2-02)
+
+Lors de l'import des inscrits, des colonnes optionnelles permettent de créer
+ou réutiliser des **tests de positionnement** rattachés à la session, et de
+lier chaque inscription au test correspondant.
+
+| Colonne                      | Autres intitulés acceptés                              | Obligatoire |
+| ---------------------------- | -------------------------------------------------------- | ------------- |
+| `Positioning test 1 code`  | `Test 1 code`, `Code test 1`, `Code test de positionnement 1` | non           |
+| `Positioning test 1 date`  | `Test 1 date`, `Date test 1`, `Date du test 1`       | non           |
+| `Positioning test 2 code`  | `Test 2 code`, `Code test 2`, `Code test de positionnement 2` | non           |
+| `Positioning test 2 date`  | `Test 2 date`, `Date test 2`, `Date du test 2`       | non           |
+
+- Si le code correspond à un test existant pour cette session, il est **réutilisé**.
+- Sinon, un nouveau test de positionnement est **créé** et rattaché à la session.
+- Chaque inscription est liée au test via un enregistrement `PositioningScore`.
+- Les dates sont au format `YYYY-MM-DD` ou une date de cellule Excel.
+
+#### Exemple complet avec tests de positionnement
+
+| Matricule            | Nom     | Prénom | Nom arabe | Date de naissance | Lieu de naissance | Type       | Téléphone  | Positioning test 1 code | Positioning test 1 date | Positioning test 2 code | Positioning test 2 date |
+| -------------------- | ------- | ------ | --------- | ----------------- | ----------------- | ---------- | ---------- | ------------------------ | ------------------------ | ------------------------ | ------------------------ |
+|                      | BENALI  | Amina  | بن علي    | 28/07/1998        | Mostaganem        | Étudiant   | 0550112233 | TEST ANGLAIS A1          | 2026-09-15               | TEST FRANÇAIS B1         | 2026-09-16               |
+|                      | ZEROUAL | Karim  |           | vers 1975         | Oran              | Enseignant | 0661445566 | TEST ARABE A2            |                          |                          |                          |
+| `PART-ETU-2026-0001` |         |        |           |                   |                   |            |            |                          |                          |                          |                          |
+
 ### Déroulement
 
 L'import crée les participants absents **puis** les inscrit à la session, en une

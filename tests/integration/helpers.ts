@@ -97,6 +97,8 @@ export async function createSession(
     matriculePrefix: string;
     state: 'OPEN' | 'LOCKED';
     academicYear: string;
+    mode: 'PRESENTIAL' | 'REMOTE' | 'HYBRID';
+    status: 'DRAFT' | 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
   }> = {},
 ) {
   return prisma.trainingSession.create({
@@ -106,6 +108,8 @@ export async function createSession(
       admissionThreshold: overrides.admissionThreshold ?? 50,
       matriculePrefix: overrides.matriculePrefix ?? 'CEIL-ANG',
       state: overrides.state ?? 'OPEN',
+      mode: overrides.mode ?? 'PRESENTIAL',
+      status: overrides.status ?? 'DRAFT',
     },
   });
 }

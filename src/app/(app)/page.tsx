@@ -30,6 +30,8 @@ async function loadStats(noTitle: string, actor: Actor) {
         select: {
           id: true,
           state: true,
+          mode: true,
+          status: true,
           academicYear: true,
           training: { select: { frName: true, arName: true } },
           trainingLevel: { select: { name: true } },
@@ -54,13 +56,15 @@ async function loadStats(noTitle: string, actor: Actor) {
   const sessions = await Promise.all(
     filtered
       .filter((session) => canManageSessions(actor.role) || delegatedSessionIds.has(session.id))
-      .map(async (session) => ({
-        id: session.id,
-        title: deriveSessionTitle(session) || noTitle,
-        state: session.state,
-        enrollments: session._count.enrollments,
-        admission: await computeAdmission(prisma, session.id),
-      })),
+        .map(async (session) => ({
+          id: session.id,
+          title: deriveSessionTitle(session) || noTitle,
+          state: session.state,
+          mode: session.mode,
+          status: session.status,
+          enrollments: session._count.enrollments,
+          admission: await computeAdmission(prisma, session.id),
+        })),
   );
 
   return { participants, openSessions, lockedSessions, confirmedReceipts, sessions };
@@ -113,6 +117,8 @@ export default async function DashboardPage() {
                   <tr className="border-b text-muted-foreground">
                     <th className="py-2 text-start font-medium">{t('dashboard.colSession')}</th>
                     <th className="py-2 text-start font-medium">{t('dashboard.colState')}</th>
+                    <th className="py-2 text-start font-medium">{t('dashboard.colMode')}</th>
+                    <th className="py-2 text-start font-medium">{t('dashboard.colStatus')}</th>
                     <th className="py-2 text-end font-medium">{t('dashboard.colEnrollments')}</th>
                     <th className="py-2 text-end font-medium">{t('scores.admitted')}</th>
                     <th className="py-2 text-end font-medium">{t('scores.refused')}</th>
@@ -129,6 +135,16 @@ export default async function DashboardPage() {
                             ? t('session.state.open')
                             : t('session.state.locked')}
                         </Badge>
+                      </td>
+                      <td className="py-2">
+                        {session.mode
+                          ? t(`session.mode.${session.mode.toLowerCase()}`)
+                          : '—'}
+                      </td>
+                      <td className="py-2">
+                        {session.status
+                          ? t(`session.status.${session.status.toLowerCase()}`)
+                          : '—'}
                       </td>
                       <td className="py-2 text-end tabular-nums">{session.enrollments}</td>
                       <td className="py-2 text-end tabular-nums">{session.admission.admitted}</td>

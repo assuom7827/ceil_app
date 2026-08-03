@@ -175,6 +175,7 @@ export const trainingSessionCrud: CrudConfig<Record<string, unknown>> = {
     training: true,
     trainingLevel: true,
     diplomaModel: true,
+    agents: true,
     _count: { select: { enrollments: true, groups: true } },
   },
   listFilter: (actor) => {
