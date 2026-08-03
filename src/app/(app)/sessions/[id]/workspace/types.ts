@@ -63,6 +63,12 @@ export interface EnrollmentsPayload {
     levels: NamedRef[];
   };
   rows: EnrollmentRow[];
+  meta: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface DeliberationRow {

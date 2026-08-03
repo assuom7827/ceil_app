@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Save, Trash2, ExternalLink } from 'lucide-react';
+import { Save, Trash2, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { EditableGrid, type GridColumn } from '@/components/grid/editable-grid';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api/client';
 import { deriveParticipantFullName } from '@/services/derive';
@@ -56,13 +57,34 @@ export function EnrollmentsTab({
   const [drafts, setDrafts] = React.useState<Map<string, Draft>>(new Map());
   const [dirty, setDirty] = React.useState<Set<string>>(new Set());
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [page, setPage] = React.useState(1);
+  const [search, setSearch] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const [wizardEnrollmentId, setWizardEnrollmentId] = React.useState<string | null>(null);
   const { pending, feedback, run } = useAction();
 
+  const perPage = Number(process.env.NEXT_PUBLIC_ENROLLMENTS_PAGE_SIZE || 25);
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const load = React.useCallback(async () => {
+    const params = new URLSearchParams({
+      page: String(page),
+      perPage: String(perPage),
+    });
+    if (debouncedSearch) params.set('q', debouncedSearch);
+
     const [enrollments, sessionGroups] = await Promise.all([
-      apiGet<EnrollmentsPayload>(`/api/sessions/${sessionId}/enrollments`),
+      apiGet<EnrollmentsPayload>(
+        `/api/sessions/${sessionId}/enrollments?${params.toString()}`,
+      ),
       apiGet<GroupRow[]>(`/api/sessions/${sessionId}/groups/organize-by-level`),
     ]);
 
@@ -71,8 +93,8 @@ export function EnrollmentsTab({
     setDrafts(new Map(enrollments.rows.map((row) => [row.id, toDraft(row)])));
     setDirty(new Set());
     setSelected(new Set());
-    onCountChange(enrollments.rows.length);
-  }, [onCountChange, sessionId]);
+    onCountChange(enrollments.meta?.total ?? enrollments.rows.length);
+  }, [onCountChange, sessionId, page, perPage, debouncedSearch]);
 
   React.useEffect(() => {
     void load();
@@ -188,14 +210,18 @@ export function EnrollmentsTab({
         get: () => '',
         align: 'end',
         render: (row) => {
+          const confirmed = row.status === 'CONFIRMED';
           const href = `/print/sessions/${sessionId}/attestations?enrollmentId=${row.id}`;
-          return (
+          return confirmed ? (
             <Button asChild variant="ghost" size="sm">
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                <ExternalLink />
-                {t('enrollmentsTab.printAttestation')}
+              <a href={href} target="_blank" rel="noopener noreferrer" aria-label={t('enrollmentsTab.printAttestation')}>
+                <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
+          ) : (
+            <span aria-label={t('enrollmentsTab.printAttestation')} title={t('enrollmentsTab.statusNotConfirmed')}>
+              <ExternalLink className="h-4 w-4 text-muted-foreground/50" />
+            </span>
           );
         },
       },
@@ -260,9 +286,9 @@ export function EnrollmentsTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <EnrollDialog sessionId={sessionId} disabled={!editable} onEnrolled={load} />
+       <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <EnrollDialog sessionId={sessionId} disabled={!editable} onEnrolled={load} />
 
           <Button onClick={saveAll} disabled={!editable || pending || dirty.size === 0}>
              {pending ? <Spinner /> : <Save />}
@@ -287,6 +313,16 @@ export function EnrollmentsTab({
           disabled={!editable}
           onImported={load}
         />
+
+        <div className="flex items-center gap-2">
+          <Input
+            id="enrollments-search"
+            placeholder={t('enrollmentsTab.searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 w-64"
+          />
+        </div>
       </div>
 
       {selected.size > 0 && editable ? (
@@ -349,8 +385,34 @@ export function EnrollmentsTab({
            onToggleAll: (checked) =>
              setSelected(checked ? new Set(payload.rows.map((row) => row.id)) : new Set()),
          }}
-         emptyLabel="Aucun inscrit. Utilisez « Inscrire des participants »."
-       />
+          emptyLabel="Aucun inscrit. Utilisez « Inscrire des participants »."
+        />
+
+        {payload?.meta && payload.meta.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || pending}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t('enrollmentsTab.paginationPrev')}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {t('enrollmentsTab.paginationInfo', { page, totalPages: payload.meta.totalPages })}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(payload.meta.totalPages, p + 1))}
+              disabled={page >= payload.meta.totalPages || pending}
+            >
+              {t('enrollmentsTab.paginationNext')}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {wizardEnrollmentId && payload && (
           <EnrollmentWizard
