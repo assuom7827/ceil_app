@@ -171,7 +171,7 @@ describe.skipIf(!hasDb)('retrait et affectation de groupe', () => {
     expect(await prisma.enrollment.count()).toBe(0);
   });
 
-  it('refuse le retrait dans une session verrouillée (409)', async () => {
+   it('refuse le retrait dans une session verrouillée (409)', async () => {
     const { training } = await createTraining();
     const session = await createSession(training.id);
     const [participant] = await createParticipants(1);
@@ -181,6 +181,47 @@ describe.skipIf(!hasDb)('retrait et affectation de groupe', () => {
     await lockSession(prisma, session.id);
     await expectServiceError(removeEnrollment(prisma, enrollment.id), 'LOCKED', 409);
     expect(await prisma.enrollment.count()).toBe(1);
+  });
+
+  it('refuse le retrait par un USER non-admin (403)', async () => {
+    const { training } = await createTraining();
+    const session = await createSession(training.id);
+    const [participant] = await createParticipants(1);
+    await enroll(prisma, session.id, [participant!.id]);
+    const enrollment = await prisma.enrollment.findFirstOrThrow();
+
+    await expectServiceError(
+      removeEnrollment(prisma, enrollment.id, 'user-id', 'USER'),
+      'FORBIDDEN',
+      403,
+    );
+    expect(await prisma.enrollment.count()).toBe(1);
+  });
+
+  it('refuse le retrait par un MANAGER non-admin (403)', async () => {
+    const { training } = await createTraining();
+    const session = await createSession(training.id);
+    const [participant] = await createParticipants(1);
+    await enroll(prisma, session.id, [participant!.id]);
+    const enrollment = await prisma.enrollment.findFirstOrThrow();
+
+    await expectServiceError(
+      removeEnrollment(prisma, enrollment.id, 'mgr-id', 'MANAGER'),
+      'FORBIDDEN',
+      403,
+    );
+    expect(await prisma.enrollment.count()).toBe(1);
+  });
+
+  it('autorise le retrait par un ADMIN', async () => {
+    const { training } = await createTraining();
+    const session = await createSession(training.id);
+    const [participant] = await createParticipants(1);
+    await enroll(prisma, session.id, [participant!.id]);
+    const enrollment = await prisma.enrollment.findFirstOrThrow();
+
+    await removeEnrollment(prisma, enrollment.id, 'admin-id', 'ADMIN');
+    expect(await prisma.enrollment.count()).toBe(0);
   });
 
   it('affecte un groupe en masse', async () => {

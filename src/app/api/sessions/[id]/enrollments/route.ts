@@ -19,7 +19,9 @@ export const GET = route<{ id: string }>(
           select: {
             frName: true,
             arName: true,
-            levels: { select: { id: true, name: true }, orderBy: { sequence: 'asc' } },
+            TrainingToTrainingLevel: {
+              select: { training_levels: { select: { id: true, name: true } } },
+            },
           },
         },
         trainingLevel: { select: { name: true } },
@@ -30,10 +32,12 @@ export const GET = route<{ id: string }>(
     const enrollments = await db.enrollment.findMany({
       where: { trainingSessionId: params.id },
       orderBy: [{ participant: { familyName: 'asc' } }, { participant: { firstName: 'asc' } }],
-      select: {
-        id: true,
-        kind: true,
-        registrationNumber: true,
+       select: {
+         id: true,
+         kind: true,
+         status: true,
+         statusChangedAt: true,
+         registrationNumber: true,
         enrolledAt: true,
         responsible: true,
         participant: {
@@ -61,7 +65,7 @@ export const GET = route<{ id: string }>(
         title: deriveSessionTitle(session),
         admissionThreshold: session.admissionThreshold,
         matriculePrefix: session.matriculePrefix,
-        levels: session.training.levels,
+        levels: session.training.TrainingToTrainingLevel.map((lt) => lt.training_levels),
       },
       rows: enrollments.map((enrollment) => ({
         ...enrollment,

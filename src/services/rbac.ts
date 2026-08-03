@@ -56,6 +56,10 @@ export function hasFullAccess(role: Role): boolean {
   return FULL_ACCESS_ROLES.includes(role);
 }
 
+export function isAdmin(role: Role): boolean {
+  return role === 'ADMIN';
+}
+
 /** MANAGER et ADMIN gèrent la configuration — pas les utilisateurs classiques. */
 export function canManageSessions(role: Role): boolean {
   return hasFullAccess(role);

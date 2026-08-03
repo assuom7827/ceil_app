@@ -83,7 +83,11 @@ export async function createTraining(withLevels = true) {
     data: {
       frName: `Anglais ${Math.random().toString(36).slice(2, 8)}`,
       arName: 'الإنجليزية',
-      levels: { connect: levels.map(({ id }) => ({ id })) },
+      TrainingToTrainingLevel: {
+        create: levels.map(({ id }) => ({
+          training_levels: { connect: { id } },
+        })),
+      },
     },
   });
 

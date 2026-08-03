@@ -7,7 +7,7 @@
  */
 import type { Db } from './db';
 import { withTransaction } from './db';
-import { conflictError, notFoundError, validationError } from './errors';
+import { conflictError, forbiddenError, notFoundError, validationError } from './errors';
 import { assertSessionWritable } from './locking';
 import { allocateEnrollmentRegistrationNumber } from './registration-numbers';
 import { allocateParticipantRegistrationNumber } from './registration-numbers';
@@ -224,13 +224,18 @@ export async function createAndEnroll(
 // Retrait
 // ---------------------------------------------------------------------------
 
-/** Retire une inscription. Refuse si la session est verrouillée (409). */
+/** Retire une inscription. Refuse si la session est verrouillée (409) ou si l'acteur n'est pas ADMIN (403). */
 export async function removeEnrollment(
   db: Db,
   enrollmentId: string,
   actorId?: string,
   actorRole?: 'MANAGER' | 'USER' | 'ADMIN',
 ): Promise<void> {
+  if (actorRole && actorRole !== 'ADMIN') {
+    throw forbiddenError('Seul un administrateur peut supprimer une inscription.', {
+      actorRole,
+    });
+  }
   const enrollment = await db.enrollment.findUnique({
     where: { id: enrollmentId },
     select: { trainingSessionId: true, participantId: true, registrationNumber: true },

@@ -30,7 +30,7 @@ export const ACTION_ENROLLMENT_LEVEL_RESOLVED = 'ENROLLMENT_LEVEL_RESOLVED';
 /** Niveaux actifs proposés par la formation du test, triés par séquence. */
 async function levelsForTraining(db: Db, trainingId: string): Promise<LevelIntervalInput[]> {
   return db.trainingLevel.findMany({
-    where: { disabled: false, trainings: { some: { id: trainingId } } },
+     where: { disabled: false, trainingToTrainingLevels: { some: { trainingId } } },
     orderBy: { sequence: 'asc' },
     select: {
       id: true,

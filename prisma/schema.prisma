@@ -216,10 +216,10 @@ model TrainingLevel {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  /// Relation M2N implicite avec les formations qui proposent ce niveau.
-  trainings Training[]
+   /// Relation M2N explicite via TrainingToTrainingLevel.
+   trainingToTrainingLevels TrainingToTrainingLevel[]
 
-  sessions    TrainingSession[]
+   sessions    TrainingSession[]
   enrollments Enrollment[]      @relation("AssignedLevel")
   groups      StudentGroup[]    @relation("GroupLevel")
 
@@ -294,15 +294,29 @@ model Training {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  /// Relation M2N implicite avec les niveaux proposés.
-  levels TrainingLevel[]
+   /// Relation M2N explicite avec les niveaux proposés.
+   TrainingToTrainingLevel TrainingToTrainingLevel[]
 
-  sessions         TrainingSession[]
+   sessions         TrainingSession[]
   positioningTests PositioningTest[]
 
-  @@unique([frName])
-  @@index([disabled])
-  @@map("trainings")
+   @@unique([frName])
+   @@index([disabled])
+   @@map("trainings")
+}
+
+/// Table de jointure explicite Training ↔ TrainingLevel.
+model TrainingToTrainingLevel {
+  id            String        @id @default(cuid())
+  trainingId    String
+   training      Training    @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+   trainingLevelId String
+   training_levels  TrainingLevel @relation(fields: [trainingLevelId], references: [id], onDelete: Cascade)
+
+   @@index([trainingId])
+   @@index([trainingLevelId])
+   @@unique([trainingId, trainingLevelId])
+   @@map("training_training_levels")
 }
 
 // ============================================================================
@@ -502,6 +516,10 @@ model Enrollment {
   positioningScore  PositioningScore?
   deliberationEntry DeliberationEntry?
 
+  status           EnrollmentStatus @default(PENDING)
+  statusChangedAt  DateTime?
+  statusChangedBy  String?
+
   /// Empêche toute inscription en double à une même session.
   @@unique([participantId, trainingSessionId])
   /// Le matricule d'inscription est unique dans le périmètre de sa session.
@@ -646,8 +664,20 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
-  @@index([entityType, entityId])
+   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+/// Cycle de vie d'une inscription à une session de formation.
+/// PENDING est la valeur par défaut : l'inscription est créée mais pas encore
+/// confirmée. Les transitions sont contrôlées par `src/services/enrollmentStatus.ts`.
+enum EnrollmentStatus {
+  PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  REJECTED
 }

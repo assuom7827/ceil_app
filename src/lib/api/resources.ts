@@ -121,16 +121,34 @@ export const trainingCrud: CrudConfig<Record<string, unknown>> = {
   searchable: ['frName', 'arName', 'code'],
   sortable: ['frName', 'code', 'createdAt'],
   defaultOrderBy: { frName: 'asc' },
-  include: { levels: { orderBy: { sequence: 'asc' } } },
+  include: {
+    TrainingToTrainingLevel: {
+      include: { training_levels: true },
+      orderBy: { training_levels: { sequence: 'asc' } },
+    },
+  },
   softDisable: false,
-  toCreateData: ({ levelIds, ...rest }) => ({
-    ...rest,
-    levels: connectRelation(levelIds as string[] | undefined),
-  }),
-  toUpdateData: ({ levelIds, ...rest }) => ({
-    ...rest,
-    levels: setRelation(levelIds as string[] | undefined),
-  }),
+  toCreateData: ({ levelIds, ...rest }) => {
+    const ids = levelIds as string[] | undefined;
+    return {
+      ...rest,
+      TrainingToTrainingLevel: ids && ids.length > 0
+        ? { create: ids.map((id) => ({ training_levels: { connect: { id } } })) }
+        : undefined,
+    };
+  },
+  toUpdateData: ({ levelIds, ...rest }) => {
+    const ids = levelIds as string[] | undefined;
+    return {
+      ...rest,
+      TrainingToTrainingLevel: ids
+        ? {
+            deleteMany: {},
+            create: ids.map((id) => ({ training_levels: { connect: { id } } })),
+          }
+        : undefined,
+    };
+  },
   /**
    * Les formations désactivées sont invisibles pour le rôle `USER` uniquement.
    * `ADMIN` et `MANAGER` voient toujours l'ensemble du catalogue, y compris

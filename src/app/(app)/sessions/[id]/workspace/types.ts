@@ -18,6 +18,7 @@ export interface WorkspacePermissions {
   scores: boolean;
   groups: boolean;
   session: boolean;
+  canDeleteEnrollment: boolean;
 }
 
 export interface ParticipantSummary {
@@ -39,6 +40,8 @@ export interface NamedRef {
 export interface EnrollmentRow {
   id: string;
   kind: 'NEW' | 'RETURNING';
+  status: 'PENDING' | 'CONFIRMED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+  statusChangedAt: string | null;
   registrationNumber: string | null;
   responsible: string | null;
   participant: ParticipantSummary;
