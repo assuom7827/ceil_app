@@ -31,6 +31,7 @@ const BUSINESS_RESOURCES: Resource[] = [
 
 const USER_WRITABLE_RESOURCES: Resource[] = [
   'Enrollment',
+  'Participant',
   'PositioningScore',
   'DeliberationEntry',
   'PaymentReceipt',
