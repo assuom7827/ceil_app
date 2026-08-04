@@ -39,6 +39,7 @@ const FULL_ACCESS_ROLES: readonly Role[] = ['MANAGER', 'ADMIN'];
  */
 const USER_WRITABLE_RESOURCES: readonly Resource[] = [
   'Enrollment',
+  'Participant',
   'PositioningScore',
   'DeliberationEntry',
   'PaymentReceipt',
