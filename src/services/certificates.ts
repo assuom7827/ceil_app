@@ -11,6 +11,7 @@
  */
 import type { Db } from './db';
 import { arabicMonthOfDate, type Nullable } from './derive';
+import { formatDateUTC } from '@/lib/date-format';
 import { getAttestationDocument, getDiplomaDocument, type DocumentHeader, type DocumentPerson } from './documents';
 import { notFoundError, validationError } from './errors';
 import {
@@ -36,10 +37,12 @@ function text(value: Nullable<string>): string {
 
 function formatDate(value: Nullable<Date>, inverse = false): string {
   if (!value) return '';
-  const day = String(value.getUTCDate()).padStart(2, '0');
-  const month = String(value.getUTCMonth() + 1).padStart(2, '0');
-  const year = value.getUTCFullYear();
-  return inverse ? `${year}/${month}/${day}` : `${day}/${month}/${year}`;
+  const formatted = formatDateUTC(value);
+  if (inverse) {
+    const parts = formatted.split('/');
+    return parts.reverse().join('/');
+  }
+  return formatted;
 }
 
 async function generateQrCode(verificationUrl: string): Promise<Uint8Array | null> {

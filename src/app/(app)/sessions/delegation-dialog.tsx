@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { apiGet, apiPost } from '@/lib/api/client';
+import { formatDate } from '@/lib/date-format';
 import type { SessionAgentInfo } from '@/services/delegation';
 
 interface UserOption {
@@ -175,7 +176,7 @@ export function DelegationDialog({
                       <TableCell className="font-medium">{agent.userName}</TableCell>
                       <TableCell>{agent.userEmail}</TableCell>
                       <TableCell className="text-end tabular-nums">
-                        {new Date(agent.assignedAt).toLocaleDateString()}
+                         {formatDate(agent.assignedAt)}
                       </TableCell>
                       <TableCell className="text-end">
                         <Button

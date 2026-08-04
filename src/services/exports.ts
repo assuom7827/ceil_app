@@ -13,6 +13,7 @@ import * as XLSX from 'xlsx';
 import type { Db } from './db';
 import { getDeliberation } from './deliberation';
 import { deriveParticipantFullName, deriveParticipantArabicFullName } from './derive';
+import { formatDate } from '@/lib/date-format';
 import { notFoundError } from './errors';
 
 export type ExportKind = 'enrollments' | 'scores';
@@ -34,8 +35,7 @@ interface SheetSpec {
 }
 
 function dateFmt(date: Date | null | undefined): string {
-  if (!date) return '';
-  return new Date(date).toISOString().slice(0, 10);
+  return formatDate(date);
 }
 
 function numFmt(value: number | null | undefined): string {
